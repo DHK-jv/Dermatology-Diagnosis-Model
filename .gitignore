@@ -1,0 +1,31 @@
+# Virtual environment
+.venv/
+.vs/
+
+# ENV
+.env
+
+# DATASET (KHÔNG PUSH ẢNH)
+data/raw/images/**
+data/masks/lesion/**
+
+# Processed data (nếu không cần push)
+data/processed/roi/**
+# data/processed/clinical/**   # ← comment lại nếu muốn giữ CSV
+
+# Model weights
+models_checkpoints/*.pth
+
+# Notebook cache
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+data/raw/images/*
+!data/raw/images/.gitkeep
+
+data/masks/lesion/*
+!data/masks/lesion/.gitkeep

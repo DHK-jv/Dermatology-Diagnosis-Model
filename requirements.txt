@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+python-multipart
+opencv-python
+numpy>=2.1.0
+tensorflow>=2.17.0
+scikit-learn
+matplotlib
