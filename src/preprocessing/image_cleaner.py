@@ -98,8 +98,8 @@ if __name__ == "__main__":
     pipeline = ImagePreprocessingPipeline(target_size=(300, 300))
 
     # 2. Đường dẫn file (Hãy thay đổi đường dẫn này đúng với file trong máy bạn)
-    img_path = r"D:\AI_Da_Lieu\Dermatology-Model-Agent\data\raw\images\ISIC_0024307.jpg"
-    mask_path = r"D:\AI_Da_Lieu\Dermatology-Model-Agent\data\masks\lesion\ISIC_0024307_segmentation.png"
+    img_path = r"/home/khangjv/WorkSpace/MedAI_Dermatology/data/raw/images/ISIC_0024307.jpg"
+    mask_path = r"/home/khangjv/WorkSpace/MedAI_Dermatology/data/masks/lesion/ISIC_0024307_segmentation.png"
 
     try:
         result = pipeline.run(img_path, mask_path)

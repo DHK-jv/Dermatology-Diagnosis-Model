@@ -32,7 +32,7 @@ def dull_razor(image_path):
 # Cách sử dụng:
 if __name__ == "__main__":
     # Sử dụng raw string (r) để tránh lỗi ký tự gạch chéo
-    path = r"D:\AI_Da_Lieu\Dermatology-Model-Agent\data\raw\images\ISIC_0024306.jpg"
+    path = r"/home/khangjv/WorkSpace/MedAI_Dermatology/data/raw/images/ISIC_0024306.jpg"
     
     if not os.path.exists(path):
         print("CẢNH BÁO: Đường dẫn file không tồn tại. Hãy kiểm tra lại tên file ISIC_0024306.jpg")
