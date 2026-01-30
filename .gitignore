@@ -29,3 +29,23 @@ data/raw/images/*
 
 data/masks/lesion/*
 !data/masks/lesion/.gitkeep
+__pycache__/
+venv/
+
+# --- ML models & weights ---
+ml_models/
+*.keras
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# History / large json
+history.json
+
+# Editor settings and archives
+.vscode/
+*.zip
+*.rar
