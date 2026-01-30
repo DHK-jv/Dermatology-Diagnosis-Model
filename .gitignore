@@ -49,3 +49,7 @@ history.json
 .vscode/
 *.zip
 *.rar
+
+# Uploaded files (do not track uploads/images)
+uploads/
+backend/uploads/
