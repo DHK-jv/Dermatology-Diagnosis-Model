@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Sàng Lọc Bệnh Da Liễu - MedAI Dermatology</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS with Config -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#007fff",
+                        "primary-hover": "#0066cc",
+                        "teal-dark": "#004d4d",
+                        "teal-light": "#e0f2f1",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1923",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-[#101418] dark:text-white flex flex-col min-h-screen font-display">
+    <!-- Top Navigation -->
+    <header
+        class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[#dae0e7] dark:border-[#2e3e50] bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md px-6 lg:px-20 py-4 shadow-sm">
+        <div class="flex items-center gap-3 text-teal-dark dark:text-white">
+            <div class="flex items-center justify-center rounded bg-primary/10 p-1.5 text-primary">
+                <span class="material-symbols-outlined text-[28px]">dermatology</span>
+            </div>
+            <h2 class="text-teal-dark dark:text-white text-xl font-bold leading-tight tracking-tight">MedAI Dermatology
+            </h2>
+        </div>
+
+        <div class="hidden md:flex items-center gap-8">
+            <nav class="flex items-center gap-6">
+                <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                    href="../index.html">Trang Chủ</a>
+
+                <a class="text-primary text-sm font-bold" href="intro.html">Chẩn Đoán</a>
+
+                <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                    href="history.html">Lịch Sử</a>
+            </nav>
+
+            <a href="intro.html"
+                class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-md transition-all">
+                <span class="truncate">Chẩn Đoán Ngay</span>
+            </a>
+        </div>
+
+        <button class="md:hidden text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </header>
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4 md:p-8">
+        <div class="w-full max-w-6xl">
+            <!-- Page Heading Section -->
+            <div class="mb-8 text-center md:text-left">
+                <h1 class="text-3xl md:text-4xl font-bold text-[#101418] dark:text-white mb-2 tracking-tight">Sàng
+                    Lọc Bệnh Da Liễu</h1>
+                <p class="text-[#5e758d] dark:text-gray-400 text-base max-w-2xl">
+                    Tải lên hình ảnh rõ nét của vùng da. Trợ lý AI của chúng tôi sẽ phân tích để tìm các dấu hiệu
+                    bệnh da liễu và cung cấp đánh giá rủi ro.
+                </p>
+            </div>
+            <!-- Central Card Layout -->
+            <div
+                class="bg-white dark:bg-[#1e293b] rounded-2xl shadow-xl overflow-hidden border border-[#e5e7eb] dark:border-[#2a3b47] flex flex-col lg:flex-row min-h-[600px]">
+                <!-- Left Column: Upload Interactions -->
+                <div
+                    class="w-full lg:w-3/5 p-6 md:p-10 flex flex-col gap-8 border-b lg:border-b-0 lg:border-r border-[#e5e7eb] dark:border-[#2a3b47]">
+                    <!-- Section Title -->
+                    <div>
+                        <h3 class="text-xl font-bold text-[#101418] dark:text-white mb-1">Chọn Hình Ảnh</h3>
+                        <p class="text-sm text-[#5e758d] dark:text-gray-400">Định dạng hỗ trợ: JPG, PNG, HEIC</p>
+                    </div>
+                    <!-- Dropzone -->
+                    <div data-upload-zone
+                        class="group relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#dae0e7] dark:border-[#3e4c59] bg-[#f8fafc] dark:bg-[#0f1923]/50 p-10 transition-all hover:border-primary hover:bg-primary/5 cursor-pointer">
+                        <div
+                            class="size-16 rounded-full bg-white dark:bg-[#2a3b47] flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-primary text-3xl">cloud_upload</span>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <p class="text-[#101418] dark:text-white text-lg font-bold">Nhấp hoặc kéo file để tải lên
+                            </p>
+                            <p class="text-[#5e758d] dark:text-gray-400 text-sm">Kích thước file tối đa 10MB</p>
+                        </div>
+                    </div>
+                    <!-- Divider -->
+                    <div class="relative flex items-center py-2">
+                        <div class="flex-grow border-t border-[#e5e7eb] dark:border-[#3e4c59]"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
+                        <div class="flex-grow border-t border-[#e5e7eb] dark:border-[#3e4c59]"></div>
+                    </div>
+                    <!-- Camera Button -->
+                    <button data-camera-btn
+                        class="w-full flex items-center justify-center gap-3 bg-[#f0f2f5] dark:bg-[#2a3b47] hover:bg-[#e4e6e9] dark:hover:bg-[#374b5c] text-[#101418] dark:text-white rounded-xl h-12 px-6 font-bold transition-colors">
+                        <span class="material-symbols-outlined">photo_camera</span>
+                        Sử Dụng Camera
+                    </button>
+                    <!-- Guidelines Checklist -->
+                    <div
+                        class="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-5 border border-blue-100 dark:border-blue-900/20 mt-auto">
+                        <h4 class="text-sm font-bold text-[#101418] dark:text-white mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-lg">info</span>
+                            Hướng dẫn để có kết quả tốt nhất
+                        </h4>
+                        <ul class="space-y-3">
+                            <li class="flex items-start gap-3">
+                                <span
+                                    class="material-symbols-outlined text-green-600 text-lg mt-0.5">check_circle</span>
+                                <span class="text-sm text-[#101418] dark:text-gray-300">Đảm bảo vùng da được chiếu sáng
+                                    tốt và không có bóng đổ</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span
+                                    class="material-symbols-outlined text-green-600 text-lg mt-0.5">check_circle</span>
+                                <span class="text-sm text-[#101418] dark:text-gray-300">Giữ camera ổn định và lấy nét rõ
+                                    ràng</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span
+                                    class="material-symbols-outlined text-green-600 text-lg mt-0.5">check_circle</span>
+                                <span class="text-sm text-[#101418] dark:text-gray-300">Nên có một đồng xu bên cạnh để
+                                    so sánh kích thước (tùy chọn)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Right Column: Preview & Analysis -->
+                <div class="w-full lg:w-2/5 bg-[#f8fafc] dark:bg-[#0f1923]/30 p-6 md:p-10 flex flex-col gap-6">
+                    <h3 class="text-xl font-bold text-[#101418] dark:text-white">Sẵn Sàng Phân Tích</h3>
+                    <!-- Image Preview Card -->
+                    <div data-preview-container
+                        class="relative group w-full aspect-[4/3] rounded-xl overflow-hidden shadow-sm bg-white dark:bg-[#2a3b47] border border-[#e5e7eb] dark:border-[#3e4c59]">
+                        <img alt="Hình ảnh da người để phân tích y khoa, hiển thị nốt hoặc vùng tổn thương"
+                            class="w-full h-full object-cover"
+                            data-alt="Hình ảnh da người để phân tích y khoa, hiển thị nốt hoặc vùng tổn thương"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGd2kU4k2344GWCx_zfRXWi0Ew0FrWiDpTQOg55s8atzFnle_cUecZJkLG4ViXc1t5QaOp1CRP8qX8hYCa5avaSzwxfx3uLw7CL9dRXS7p0kBmb7q06bzQqCEQrAo6RPitzcxiYqfaSUEggWZtFDiNaMMAnrRDMeQS51evqn9ntPVEwDASPwylGT9JLv6Y5hgNr1rXnhna9HKPqeuNdUp14U-g2wTfXAhizeEcBRuuqi9p024XUzqPGj0zvQpT11rD21bnp6hudym9" />
+                        <!-- Overlay actions -->
+                        <div class="absolute top-2 right-2">
+                            <button
+                                class="bg-white/90 dark:bg-black/70 p-2 rounded-full text-red-500 hover:text-red-600 hover:bg-white transition-all shadow-sm"
+                                title="Xóa Hình Ảnh">
+                                <span class="material-symbols-outlined text-xl">delete</span>
+                            </button>
+                        </div>
+                        <div class="absolute bottom-2 left-2 right-2">
+                            <div
+                                class="bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur px-3 py-2 rounded-lg flex items-center justify-between shadow-sm">
+                                <div class="flex flex-col overflow-hidden">
+                                    <span class="text-xs font-bold truncate dark:text-white">scan_2023_10_24.jpg</span>
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400">2.4 MB</span>
+                                </div>
+                                <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- AI Confidence / Note -->
+                    <div
+                        class="flex gap-3 items-start p-3 bg-white dark:bg-[#1e293b] rounded-lg border border-[#e5e7eb] dark:border-[#3e4c59]">
+                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-bold text-[#101418] dark:text-white">AI Sẵn Sàng Phân Tích</span>
+                            <span class="text-xs text-[#5e758d] dark:text-gray-400">Chất lượng hình ảnh tốt. Hệ thống
+                                của chúng tôi
+                                sẽ kiểm tra độ bất đối xứng, đường viền, màu sắc và kích thước.</span>
+                        </div>
+                    </div>
+                    <div class="mt-auto space-y-4">
+                        <!-- Primary Action -->
+                        <button data-analyze-btn
+                            class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">analytics</span>
+                            Phân Tích Hình Ảnh
+                        </button>
+                        <!-- Privacy Trust Indicator -->
+                        <div class="flex items-center justify-center gap-2 text-[#5e758d] dark:text-gray-400">
+                            <span class="material-symbols-outlined text-sm">lock</span>
+                            <span class="text-xs font-medium">Bảo Mật End-to-End</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- JavaScript Files -->
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/diagnose.js"></script>
+</body>
+
+</html>

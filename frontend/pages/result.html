@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Kết Quả Chẩn Đoán - MedAI Dermatology</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Configuration -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#007fff",
+                        "primary-hover": "#0066cc",
+                        "teal-dark": "#004d4d",
+                        "teal-light": "#e0f2f1",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1923",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<bodyclass="bg-background-light dark:bg-background-dark text-[#101418] dark:text-white font-display overflow-x-hidden">
+    <div class="relative flex h-auto min-h-screen w-full flex-col">
+        <!-- Top Navigation -->
+        <header
+            class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[#dae0e7] dark:border-[#2e3e50] bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md px-6 lg:px-20 py-4 shadow-sm">
+            <div class="flex items-center gap-3 text-teal-dark dark:text-white">
+                <div class="flex items-center justify-center rounded bg-primary/10 p-1.5 text-primary">
+                    <span class="material-symbols-outlined text-[28px]">dermatology</span>
+                </div>
+                <h2 class="text-teal-dark dark:text-white text-xl font-bold leading-tight tracking-tight">MedAI
+                    Dermatology</h2>
+            </div>
+
+            <div class="hidden md:flex items-center gap-8">
+                <nav class="flex items-center gap-6">
+                    <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                        href="../index.html">Trang Chủ</a>
+
+                    <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                        href="intro.html">Chẩn Đoán</a>
+
+                    <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                        href="history.html">Lịch Sử</a>
+                </nav>
+
+                <a href="intro.html"
+                    class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-md transition-all">
+                    <span class="truncate">Chẩn Đoán Ngay</span>
+                </a>
+            </div>
+
+            <button class="md:hidden text-slate-600 dark:text-slate-300">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 w-full max-w-[1100px] mx-auto px-4 md:px-10 py-8">
+            <!-- Page Heading -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 text-[#5e758d] dark:text-gray-400 text-sm font-medium mb-1">
+                        <a class="hover:underline" href="history.html">Lịch Sử</a>
+                        <span class="material-symbols-outlined text-[12px]">chevron_right</span>
+                        <span data-diagnosis-id>Đang tải...</span>
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Kết Quả Chẩn Đoán
+                    </h1>
+                    <p class="text-[#5e758d] dark:text-gray-400 text-base" data-timestamp>Đang tải...</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+                    <span class="text-sm font-medium text-[#5e758d] dark:text-gray-400">Phân Tích Hoàn Tất</span>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <section
+                class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] p-6 md:p-8 shadow-sm mb-8">
+                <div class="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between">
+                    <div class="flex flex-col gap-3">
+                        <div data-risk-badge>
+                            <!-- Risk badge will be inserted here dynamically -->
+                        </div>
+                        <div>
+                            <p
+                                class="text-[#5e758d] dark:text-gray-400 text-sm font-medium uppercase tracking-wide mb-1">
+                                Chẩn Đoán</p>
+                            <h2 class="text-4xl md:text-5xl font-bold text-[#101418] dark:text-white tracking-tight"
+                                data-disease-name>Đang tải...</h2>
+                            <p class="text-sm text-[#5e758d] dark:text-gray-400 mt-1" data-disease-name-en>Loading...
+                            </p>
+                        </div>
+                        <p class="text-sm text-[#5e758d] dark:text-gray-400 max-w-lg" data-recommendation-description>
+                            Đang tải thông tin...
+                        </p>
+                    </div>
+
+                    <!-- Confidence Ring -->
+                    <div
+                        class="flex items-center gap-6 bg-[#f8fafc] dark:bg-[#23303e] p-4 rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] w-full md:w-auto">
+                        <div class="relative size-20">
+                            <svg class="size-full -rotate-90" viewbox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Background Circle -->
+                                <path class="text-gray-200 dark:text-gray-600"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="currentColor" stroke-width="3.5"></path>
+                                <!-- Progress Circle -->
+                                <path class="text-primary"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="currentColor" stroke-dasharray="0, 100" stroke-linecap="round"
+                                    stroke-width="3.5" id="confidence-circle"></path>
+                            </svg>
+                            <div
+                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                                <span class="text-base font-bold text-primary" data-confidence-value>0%</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-lg font-bold text-[#101418] dark:text-white">Độ Tin Cậy</span>
+                            <span class="text-sm text-[#5e758d] dark:text-gray-400">Dựa trên AI model</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recommendations Section -->
+            <section
+                class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6 mb-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <span class="material-symbols-outlined text-9xl text-primary">medical_services</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-white dark:bg-blue-900 p-2 rounded-lg shadow-sm text-primary">
+                            <span class="material-symbols-outlined">smart_toy</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-[#101418] dark:text-white">Khuyến Nghị Y Tế</h3>
+                    </div>
+                    <div class="prose prose-blue max-w-none">
+                        <p class="text-[#101418] dark:text-gray-200 leading-relaxed mb-4"
+                            data-recommendation-description>
+                            Đang tải khuyến nghị...
+                        </p>
+                        <ul class="list-disc pl-5 text-sm text-[#5e758d] dark:text-gray-300 space-y-1 mb-4"
+                            data-recommendation-actions>
+                            <!-- Actions will be inserted here -->
+                        </ul>
+                        <div class="flex items-center gap-2 mt-4 pt-4 border-t border-blue-200 dark:border-blue-800/50">
+                            <span class="material-symbols-outlined text-sm text-primary">priority_high</span>
+                            <span class="text-sm font-bold text-[#101418] dark:text-white">Mức độ cấp thiết:</span>
+                            <span class="text-sm text-[#5e758d] dark:text-gray-400" data-recommendation-urgency>-</span>
+                        </div>
+                        <div
+                            class="text-xs text-[#5e758d] dark:text-gray-500 mt-4 pt-4 border-t border-blue-200 dark:border-blue-800/50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">info</span>
+                            Lưu ý: Đây là kết quả từ AI chỉ mang tính chất tham khảo và không thay thế cho chẩn đoán
+                            của bác sĩ chuyên khoa.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- All Predictions (Top 3) -->
+            <section class="mb-8">
+                <h3 class="text-lg font-bold text-[#101418] dark:text-white mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">bar_chart</span>
+                    Các Dự Đoán Khác
+                </h3>
+                <div
+                    class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] p-6 shadow-sm">
+                    <div data-all-predictions class="space-y-2">
+                        <!-- Predictions will be inserted here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Bar -->
+            <div
+                class="flex flex-col-reverse md:flex-row gap-4 justify-between items-center bg-white dark:bg-[#1a2632] p-4 rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] shadow-sm sticky bottom-4 z-40">
+                <div class="flex gap-4 w-full md:w-auto">
+                    <button data-print-btn
+                        class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] hover:bg-gray-50 dark:hover:bg-[#23303e] text-[#101418] dark:text-white font-medium transition-colors">
+                        <span class="material-symbols-outlined text-xl">print</span>
+                        <span>In PDF</span>
+                    </button>
+                    <a href="history.html"
+                        class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] hover:bg-gray-50 dark:hover:bg-[#23303e] text-[#101418] dark:text-white font-medium transition-colors">
+                        <span class="material-symbols-outlined text-xl">history</span>
+                        <span>Lịch Sử</span>
+                    </a>
+                </div>
+                <a href="intro.html"
+                    class="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg bg-primary hover:bg-blue-600 text-white font-bold shadow-md transition-all transform active:scale-95">
+                    <span class="material-symbols-outlined text-xl">add_circle</span>
+                    <span>Chẩn Đoán Mới</span>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/result.js"></script>
+    </body>
+
+</html>
