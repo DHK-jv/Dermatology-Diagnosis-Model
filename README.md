@@ -1,6 +1,6 @@
 # 🏥 MedAI Dermatology - Hệ Thống AI Chẩn Đoán Bệnh Da
 
-**Dự án phân loại 7 loại bệnh da bằng Deep Learning sử dụng EfficientNet-B3**
+**Dự án phân loại 8 loại bệnh da bằng Deep Learning sử dụng EfficientNet-B3**
 
 **Giai đoạn hiện tại:** ✅ Đã nâng cấp lên dataset ISIC 2019 (25k ảnh) để cải thiện độ chính xác.
 
@@ -30,12 +30,12 @@ MedAI_Dermatology/
 │   │   └── main.py                    # Entry point, định nghĩa API Endpoints
 │   │
 │   ├── ml_models/                 # 🧠 KHO CHỨA MODELS AI
-│   │   ├── efficientnet_b3_derma_v1.0_kaggle32e.keras # Model phân loại chính
+│   │   ├── efficientnet_b3_derma_v1.0_kaggle32e.keras  # Model phân loại chính
 │   │   └── yolov8n-seg.pt             # Model Segmentation (tách vùng da)
 │   │
 │   ├── uploads/                   # Thư mục tạm lưu ảnh upload
-│   ├── history.json                   # Local database (fallback)
-│   ├── requirements.txt               # Dependencies cho Backend
+│   ├── history.json                   # Local database (fallback) Lưu tạm khi MongoDB không khả dụng
+│   ├── requirements.txt        # Dependencies cho Backend (FastAPI, TensorFlow inference, YOLO, etc.)
 │   ├── start_backend.sh               # Script khởi động Backend
 │   └── .env                           # Biến môi trường (DB URL, Secrets)
 │
@@ -76,6 +76,7 @@ MedAI_Dermatology/
 ├── 📂 infrastructure/                 # 🏗️ DEVOPS & DEPLOYMENT
 │   ├── docker/                        # Config files cho Docker
 │   └── nginx/                         # Config Nginx
+│       └── medai_nginx.conf           # Cấu hình Nginx
 │
 ├── 📂 research/                   # 🔬 NGHIÊN CỨU & KẾT QUẢ
 │   ├── 📂 notebooks/                  # Jupyter Notebooks
@@ -93,9 +94,11 @@ MedAI_Dermatology/
 │       └── lesion/                    # Mask vùng bệnh (Ground Truth)
 │
 ├── 📄 visualize_preprocessing.py       # Script demo xử lý ảnh
-├── 📄 processed_isic_2019.zip         # Packed dataset cho Kaggle
-└── 📄 README.md                       # Tài liệu chính
----
+├── 📄 processed_isic_2019.zip         # Packed dataset cho Kaggle (tải qua link drive bên dưới)
+├── 📄 README.md                       # Tài liệu hướng dẫn
+└── 📄 requirements.txt                # Dependencies cho Backend
+
+# Link drive dataset: https://drive.google.com/file/d/1EF-yuhAYhI7nmvR9vdlLZz9t81vSd_VK/view?usp=drive_link
 
 ## 🎯 Dataset: ISIC 2019
 
@@ -129,13 +132,11 @@ Tổng: 25,331 ảnh
 
 ---
 
-## � Quy Trình Làm Việc (Workflow)
+## Quy Trình Làm Việc (Workflow)
 
-### Bước 1: Tiền Xử Lý Dữ Liệu
+### Tiền Xử Lý Dữ Liệu
 
 ```bash
-# Chạy preprocessing pipeline
-# Chạy ISIC preprocessing script
 python src/preprocessing/prepare_isic_data.py
 ```
 
@@ -157,17 +158,16 @@ python src/preprocessing/prepare_isic_data.py
    - Chuẩn bị cho EfficientNet
 
 4. **Split Dataset**:
-   - Chia thành train/val/test (70/15/15)
+   - Chia thành train/val/test (80/10/10)
    - Stratified split (giữ tỷ lệ classes)
    - Lưu vào `data/processed/`
 
-**Kết quả:** Tạo ra ~10,000 ảnh đã xử lý sẵn sàng cho training
+**Kết quả:** Tạo ra 25.331 ảnh đã xử lý sẵn sàng cho training
 
 ---
 
-### Bước 2: Training Model trên Kaggle
+### Training Model trên Kaggle
 
-**Dataset trên Kaggle:**
 **Dataset trên Kaggle:**
 - Upload `processed_isic_2019.zip` lên Kaggle Dataset
 - File chứa 25k ảnh đã preprocessing
@@ -182,68 +182,12 @@ python src/preprocessing/prepare_isic_data.py
 # Run training code
 ```
 
-**Kiến Trúc Model:**
+**Kết quả:**
+- Final TTA Accuracy: 83.58% (TTA = Test Time Augmentation)
+- Lưu model vào `backend/ml_models/efficientnet_b3_derma_v1.0_kaggle32e.keras` (32 epochs)
 
-```
-Input: Ảnh 300x300x3 (RGB)
-    ↓
-EfficientNet-B3 (pretrained ImageNet)
-    ↓ (freeze base trong Phase 1)
-GlobalAveragePooling2D
-    ↓
-Dense(512, activation='relu')
-    ↓
-Dropout(0.5)  ← Tránh overfitting
-    ↓
-Dense(8, activation='softmax')  ← 8 classes
-    ↓
-Output: Xác suất cho 7 loại bệnh
-```
 
-**Chiến Lược Training (2 Phases):**
-
-**Phase 1: Transfer Learning (50 epochs)**
-- Freeze toàn bộ EfficientNet-B3 base
-- Chỉ train phần classifier (Dense layers)
-- Learning rate: 0.001
-- Optimizer: Adam
-- Goal: Học features cơ bản
-
-**Phase 2: Fine-Tuning (20 epochs)**
-- Unfreeze 50 layers cuối của base
-- Train tiếp với learning rate thấp hơn: 0.0001
-- Optimizer: Adam
-- Goal: Tinh chỉnh features cho skin lesions
-
-**Data Augmentation:**
-```python
-# Augmentation khi training (chỉ train set)
-- Rotation: ±20°
-- Width/Height Shift: 20%
-- Zoom: 20%
-- Horizontal Flip: Random
-- Brightness: ±20%
-```
-
-**Class Weights:**
-- Xử lý imbalanced data
-- Class `nv` (nhiều nhất) có weight thấp
-- Class `mel`, `akiec` (ít hơn) có weight cao
-
-**Kết Quả Training:**
-
-| Metric | Giá trị |
-|--------|---------|
-| **Test Accuracy** | **80.04%** (chính xác) |
-| **Total Epochs** | 70 epochs |
-| **AUC Score** | ~0.97 |
-| **Best Epoch** | ~Epoch 60-65 |
-| **Training Time** | 40-60 phút (Kaggle P100 GPU) |
-| **Model Size** | ~125MB (.h5 format) |
-
----
-
-### Bước 3: Chạy Ứng Dụng (Deployment)
+### Chạy Ứng Dụng
 
 Bạn cần mở 2 cửa sổ terminal để chạy cả Backend và Frontend.
 
@@ -267,41 +211,20 @@ chmod +x start_frontend.sh # Cấp quyền thực thi nếu cần
 ```
 *Frontend sẽ chạy tại: `http://localhost:3000`*
 
-## 🏗️ Chi Tiết Hạ Tầng (Infrastructure)
 
-### Nginx Configuration (`infrastructure/nginx/medai_nginx.conf`)
+## 🔍 Inference Pipeline (Production Flow)
 
-File cấu hình Nginx đóng vai trò là **Web Server & Reverse Proxy**, giúp hệ thống hoạt động ổn định và bảo mật hơn.
+1. Người dùng upload ảnh từ Frontend
+2. Backend lưu ảnh vào `backend/uploads/`
+3. YOLOv8 Segmentation cắt vùng tổn thương
+4. Resize & normalize ảnh
+5. Load EfficientNet-B3 (.keras)
+6. Dự đoán xác suất 8 classes
+7. Trả kết quả JSON về Frontend
 
-**Chức năng chính:**
 
-1.  **Serve Frontend (Giao diện):**
-    *   Trỏ root về folders: `/home/khangjv/WorkSpace/MedAI_Dermatology/frontend`
-    *   Khi truy cập `http://localhost`, Nginx sẽ tải file `index.html` từ thư mục này.
 
-2.  **Reverse Proxy cho Backend (API):**
-    *   Chuyển tiếp (forward) các request từ `/api/` đến Backend server (`http://localhost:8000`).
-    *   Giúp Frontend gọi API mà không gặp lỗi Cross-Origin Resource Sharing (CORS).
-    *   **Settings quan trọng:**
-        *   `client_max_body_size 10M;`: Cho phép upload ảnh lên đến 10MB (cần thiết cho ảnh da liễu độ phân giải cao).
 
-3.  **Caching Tĩnh (Static Files):**
-    *   Tối ưu hóa tốc độ tải trang bằng cách cache các file tĩnh (ảnh, CSS, JS) trong 1 năm.
-
-**Sơ đồ luồng dữ liệu:**
-```
-User -> Nginx (Port 80)
-        ├── /       -> Frontend (Static Files)
-        └── /api/*  -> Backend (Python FastAPI - Port 8000)
-```
-
-## Công Nghệ
-
-- **HTML/CSS**: Tailwind CSS (via CDN)
-- **JavaScript**: Vanilla JS (ES6+)
-- **Design**: Google Material Symbols, Inter font
-- **Backend API**: FastAPI tại `http://localhost:8000`
-- **FastAPI**: Web framework hiện đại, nhanh
-- **TensorFlow**: Load và chạy model EfficientNet-B3
-- **MongoDB** (optional): Lưu lịch sử chẩn đoán
-- **Fallback JSON**: Tự động dùng file JSON nếu không có MongoDB
+⚠️ Lưu ý:
+Hệ thống này chỉ phục vụ mục đích nghiên cứu và hỗ trợ học tập.
+Kết quả dự đoán không thay thế cho chẩn đoán của bác sĩ chuyên khoa.
