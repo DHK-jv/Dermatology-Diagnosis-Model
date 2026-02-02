@@ -223,12 +223,6 @@ chmod +x start_frontend.sh # Cấp quyền thực thi nếu cần
 7. Trả kết quả JSON về Frontend
 
 
-
-
 ⚠️ Lưu ý:
 Hệ thống này chỉ phục vụ mục đích nghiên cứu và hỗ trợ học tập.
-<<<<<<< HEAD
 Kết quả dự đoán không thay thế cho chẩn đoán của bác sĩ chuyên khoa.
-=======
-Kết quả dự đoán không thay thế cho chẩn đoán của bác sĩ chuyên khoa.
->>>>>>> 5e381fd5240510a27ebfaa77a51ea0e160eaf7dd
