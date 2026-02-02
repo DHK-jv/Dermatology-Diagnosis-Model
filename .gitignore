@@ -30,6 +30,9 @@ ml_models/
 backend/ml_models/
 models/
 
+# Specific allow for main model (86MB < 100MB limit)
+!backend/ml_models/efficientnet_b3_derma_v1.0_kaggle32e.keras
+
 # Backend temporary files
 backend/uploads/
 backend/history.json
