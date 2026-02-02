@@ -1,39 +1,26 @@
 # Virtual environment
 .venv/
+venv/
 .vs/
+.vscode/
 
-# ENV
+# Environment Variables
 .env
 
-# DATASET (KHÔNG PUSH ẢNH)
-data/raw/images/**
-data/masks/lesion/**
+# Large Data & Archives
+processed_isic_2019.zip
+*.zip
+*.rar
+*.tar.gz
 
-# Processed data (nếu không cần push)
-data/processed/roi/**
-# data/processed/clinical/**   # ← comment lại nếu muốn giữ CSV
+# Data Directories (Exclude all except sample)
+data/processed/
+data/raw/
+data/masks/
+# Allow sample data folder (will be created)
+!data/sample/
 
-# Model weights
-models_checkpoints/*.pth
-
-# Notebook cache
-.ipynb_checkpoints/
-
-# OS
-.DS_Store
-Thumbs.db
-
-
-data/raw/images/*
-!data/raw/images/.gitkeep
-
-data/masks/lesion/*
-!data/masks/lesion/.gitkeep
-__pycache__/
-venv/
-
-# --- ML models & weights ---
-ml_models/
+# Model Weights (Large files)
 *.keras
 *.h5
 *.hdf5
@@ -41,15 +28,15 @@ ml_models/
 *.pth
 *.ckpt
 *.onnx
+ml_models/
+backend/ml_models/
+models/
 
-# History / large json
-history.json
-
-# Editor settings and archives
-.vscode/
-*.zip
-*.rar
-
-# Uploaded files (do not track uploads/images)
-uploads/
+# Backend temporary files
 backend/uploads/
+backend/history.json
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db

@@ -9,13 +9,17 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 import logging
 import uuid
+import base64
+import cv2
+import numpy as np
 
 from .config import settings
 from .models.schemas import (
     PredictionResponse,
     DiagnosisHistory,
     HistoryListResponse,
-    HealthResponse
+    HealthResponse,
+    PreviewResponse
 )
 from .services.preprocessing import validate_image, preprocess_image, save_uploaded_image
 from .services.inference import model_service
@@ -259,6 +263,85 @@ async def get_diagnosis(diagnosis_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi khi lấy thông tin chẩn đoán: {str(e)}"
+        )
+
+
+
+@app.post(
+    f"{settings.API_V1_PREFIX}/predict/preview",
+    response_model=PreviewResponse,
+    tags=["Prediction"],
+    summary="Xem trước tiền xử lý ảnh",
+    description="Upload ảnh và nhận lại ảnh đã qua tiền xử lý (segmentation, hair removal, resize)"
+)
+async def preview_preprocessing(file: UploadFile = File(..., description="Ảnh da cần xem trước")):
+    """
+    Endpoint xem trước kết quả tiền xử lý
+    
+    - **file**: File ảnh (JPG, PNG, HEIC) tối đa 10MB
+    
+    Returns ảnh đã qua xử lý dưới dạng base64
+    """
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Validate image (reuse existing validation)
+        is_valid, error_msg = validate_image(file_content, file.filename)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg
+            )
+        
+        # Preprocess image
+        logger.info(f"Preprocessing preview for image: {file.filename}")
+        
+        # Process the image with steps
+        preprocessed_img, steps = preprocess_image(file_content, return_steps=True)
+        
+        # Remove batch dimension if present (1, H, W, C) -> (H, W, C)
+        if len(preprocessed_img.shape) == 4:
+            preprocessed_img = np.squeeze(preprocessed_img, axis=0)
+        
+        # Helper to encode image
+        def encode_image(img_arr):
+            if img_arr.dtype == np.float32 or img_arr.dtype == np.float64:
+                if img_arr.max() <= 1.05:
+                     img_arr = (img_arr * 255).astype(np.uint8)
+                else:
+                     img_arr = img_arr.astype(np.uint8)
+            else:
+                img_arr = img_arr.astype(np.uint8)
+            
+            # Convert RGB to BGR
+            img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+            
+            # Encode
+            _, buffer = cv2.imencode('.jpg', img_bgr)
+            return base64.b64encode(buffer).decode('utf-8')
+
+        # Encode main processed image
+        jpg_as_text = encode_image(preprocessed_img)
+        
+        # Encode steps
+        encoded_steps = {}
+        if steps:
+            for key, img in steps.items():
+                encoded_steps[key] = f"data:image/jpeg;base64,{encode_image(img)}"
+        
+        return PreviewResponse(
+            processed_image=f"data:image/jpeg;base64,{jpg_as_text}",
+            steps=encoded_steps
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Preview error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi xử lý ảnh preview: {str(e)}"
         )
 
 

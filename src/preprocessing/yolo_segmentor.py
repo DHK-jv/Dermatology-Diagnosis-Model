@@ -20,13 +20,13 @@ class YOLOSegmentor:
     Tự động phát hiện và tạo mask cho vùng tổn thương da
     """
     
-    def __init__(self, model_path='yolov8n-seg.pt', conf_threshold=0.5, device='cpu'):
+    def __init__(self, model_path=None, conf_threshold=0.5, device='cpu'):
         """
         Initialize YOLO Segmentor
         
         Args:
             model_path (str): Path đến model YOLO (.pt file)
-                             - 'yolov8n-seg.pt': Nano (nhanh, nhẹ)
+                             - Default: Automatically finds 'backend/ml_models/yolov8n-seg.pt'
                              - 'yolov8s-seg.pt': Small
                              - 'path/to/custom_model.pt': Custom trained model
             conf_threshold (float): Confidence threshold (0-1)
@@ -35,9 +35,17 @@ class YOLOSegmentor:
         if not YOLO_AVAILABLE:
             raise ImportError("ultralytics not installed! Run: pip install ultralytics")
         
-        self.model_path = model_path
+        if model_path is None:
+            # Resolve default path relative to this file
+            # FILE: src/preprocessing/yolo_segmentor.py
+            # ROOT: src/preprocessing/../../
+            # TARGET: backend/ml_models/yolov8n-seg.pt
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            model_path = os.path.join(base_dir, 'backend', 'ml_models', 'yolov8n-seg.pt')
+
         self.conf_threshold = conf_threshold
         self.device = device
+        self.model_path = model_path
         self.model = None
         
         self._load_model()

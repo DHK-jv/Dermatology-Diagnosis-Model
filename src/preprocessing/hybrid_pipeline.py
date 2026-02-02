@@ -215,7 +215,7 @@ class HybridPreprocessingPipeline:
     def __init__(self, 
                  mode='auto', 
                  target_size=(300, 300),
-                 yolo_model_path='yolov8n-seg.pt',
+                 yolo_model_path=None,
                  yolo_conf=0.5,
                  device='cpu'):
         """

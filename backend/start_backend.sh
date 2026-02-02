@@ -35,8 +35,9 @@ echo "📦 Checking dependencies..."
 pip install -q -r requirements.txt
 
 # Check if model file exists
-if [ ! -f "ml_models/efficientnet_b3_derma_finetuned.keras" ]; then
-    echo "❌ Error: Model file not found at ml_models/efficientnet_b3_derma_finetuned.keras"
+# Check if model file exists
+if [ ! -f "ml_models/efficientnet_b3_derma_v1.0_kaggle32e.keras" ]; then
+    echo "❌ Error: Model file not found at ml_models/efficientnet_b3_derma_v1.0_kaggle32e.keras"
     echo "Please ensure the trained model is available."
     exit 1
 fi

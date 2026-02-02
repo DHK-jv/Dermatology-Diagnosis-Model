@@ -15,7 +15,8 @@ class Settings:
     # Paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     PROJECT_ROOT: Path = BASE_DIR.parent
-    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b3_derma_finetuned.keras"
+    #MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b3_derma_finetuned.keras"
+    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b3_derma_v1.0_kaggle32e.keras"
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     
     # API Settings

@@ -14,3 +14,5 @@ dnspython>=2.6.0
 
 # Utilities
 python-dotenv==1.0.0
+opencv-python-headless>=4.8.0
+ultralytics>=8.0.0

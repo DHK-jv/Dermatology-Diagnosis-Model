@@ -5,7 +5,7 @@
 
 const API_CONFIG = {
     // Backend API base URL
-    BASE_URL: 'http://127.0.0.1:8000',
+    BASE_URL: 'http://localhost:8000',
 
     // API v1 prefix
     V1_PREFIX: '/api/v1',
@@ -14,6 +14,7 @@ const API_CONFIG = {
     ENDPOINTS: {
         HEALTH: '/health',
         PREDICT: '/api/v1/predict',
+        PREVIEW: '/api/v1/predict/preview',
         HISTORY: '/api/v1/history',
         DIAGNOSIS: (id) => `/api/v1/history/${id}`
     },

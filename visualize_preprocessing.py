@@ -13,35 +13,60 @@ from preprocessing.hybrid_pipeline import ImagePreprocessingPipeline, HybridPrep
 
 def get_sample_image_from_raw():
     """
-    Lấy ảnh gốc từ data/raw/images/
+    Lấy ảnh gốc từ data/raw/images/ mà có mask tương ứng
     """
     raw_dir = os.path.join(os.path.dirname(__file__), 'data', 'raw', 'images')
+    mask_dir = os.path.join(os.path.dirname(__file__), 'data', 'masks', 'lesion')
     
     if not os.path.exists(raw_dir):
         print(f"⚠️  Raw images directory not found: {raw_dir}")
         return None
     
-    # Lấy file ảnh đầu tiên
-    image_files = [f for f in os.listdir(raw_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
+    # Lấy danh sách file ảnh
+    image_files = sorted([f for f in os.listdir(raw_dir) if f.endswith(('.jpg', '.jpeg', '.png'))])
     
     if not image_files:
         print(f"⚠️  No images found in {raw_dir}")
         return None
     
+    # Tìm ảnh có mask
+    for img_file in image_files:
+        basename = os.path.splitext(img_file)[0]
+        # Check standard mask name
+        mask_name = f"{basename}_segmentation.png"
+        mask_path = os.path.join(mask_dir, mask_name)
+        
+        # Check if mask exists
+        if os.path.exists(mask_path):
+            image_path = os.path.join(raw_dir, img_file)
+            image = cv2.imread(image_path)
+            if image is not None:
+                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                return image_rgb, img_file
+        
+        # Fallback check (e.g. without _downsampled suffix)
+        if '_downsampled' in basename:
+            clean_name = basename.replace('_downsampled', '')
+            mask_name_alt = f"{clean_name}_segmentation.png"
+            if os.path.exists(os.path.join(mask_dir, mask_name_alt)):
+                 image_path = os.path.join(raw_dir, img_file)
+                 image = cv2.imread(image_path)
+                 if image is not None:
+                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    return image_rgb, img_file
+
+    print(f"⚠️  No images with corresponding masks found in {raw_dir}")
+    # Fallback to first image if no mask found (will use empty mask)
     image_path = os.path.join(raw_dir, image_files[0])
     image = cv2.imread(image_path)
-    
-    if image is None:
-        print(f"⚠️  Failed to load image: {image_path}")
-        return None
-    
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    return image_rgb, image_files[0]
+    if image is not None:
+         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB), image_files[0]
+    return None
 
 
-def get_sample_mask_from_processed():
+def get_sample_mask_from_processed(image_filename):
     """
-    Lấy mask từ data/masks/lesion/
+    Lấy mask từ data/masks/lesion/ tương ứng với image_filename
     """
     mask_dir = os.path.join(os.path.dirname(__file__), 'data', 'masks', 'lesion')
     
@@ -49,14 +74,30 @@ def get_sample_mask_from_processed():
         print(f"⚠️  Masks directory not found: {mask_dir}")
         return None
     
-    # Lấy file mask đầu tiên
-    mask_files = [f for f in os.listdir(mask_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
+    # Construct mask filename
+    # Assumes image is .jpg and mask is _segmentation.png
+    basename = os.path.splitext(image_filename)[0]
+    # Remove _downsampled if present, assuming mask doesn't have it?
+    # Let's check: ISIC_0024306_downsampled.jpg -> mask is ISIC_0024306_segmentation.png?
+    # Or ISIC_0024306_downsampled_segmentation.png?
+    # The user listing showed ISIC_0024306_segmentation.png.
+    # The image file logic picks image_files[0]. 
+    # If image is ISIC_0024306.jpg, mask is ISIC_0024306_segmentation.png.
     
-    if not mask_files:
-        print(f"⚠️  No masks found in {mask_dir}")
-        return None
+    mask_filename = f"{basename}_segmentation.png"
+    mask_path = os.path.join(mask_dir, mask_filename)
     
-    mask_path = os.path.join(mask_dir, mask_files[0])
+    if not os.path.exists(mask_path):
+        # Try checking if there is a mismatch pattern or use generic search
+        print(f"⚠️  Exact mask not found: {mask_path}")
+        # Fallback: try finding any file starting with ID
+        mask_files = [f for f in os.listdir(mask_dir) if f.startswith(basename.split('_downsampled')[0])]
+        if mask_files:
+             mask_path = os.path.join(mask_dir, mask_files[0])
+             print(f"   Found alternative mask: {mask_files[0]}")
+        else:
+             return None
+    
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     
     if mask is None:
@@ -85,7 +126,7 @@ def visualize_preprocessing_steps():
     
     # Lấy mask
     print("\n🎭 Loading mask...")
-    mask = get_sample_mask_from_processed()
+    mask = get_sample_mask_from_processed(filename)
     if mask is None:
         print("⚠️  Using empty mask")
         mask = np.zeros_like(original_image[:, :, 0])

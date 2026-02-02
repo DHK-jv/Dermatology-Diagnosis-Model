@@ -101,40 +101,216 @@ function handleFileSelect(file) {
  * Show image preview
  * @param {File} file - Image file
  */
+/**
+ * Show image preview and trigger preprocessing
+ * @param {File} file - Image file
+ */
 function showImagePreview(file) {
+    if (typeof FileReader === "undefined") {
+        showError("Trình duyệt của bạn không hỗ trợ FileReader.");
+        return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = (e) => {
+        console.log("FileReader loaded image successfully");
         previewImage = e.target.result;
 
-        // Find preview container
-        let previewContainer = document.querySelector('[data-preview-container]') ||
-            document.querySelector('.relative.group.w-full.aspect-\\[4\\/3\\]');
+        // Show grid, hide placeholder prompt
+        const previewGrid = document.getElementById('preview-grid');
+        const fileInfoBar = document.getElementById('file-info-bar');
 
+        if (previewGrid) {
+            // Remove inline style="display: none;" that might be stuck
+            previewGrid.removeAttribute('style');
+            // Ensure flex class is active and hidden is removed
+            previewGrid.classList.remove('hidden');
+            previewGrid.classList.add('flex');
+        } else {
+            console.error("Critical: #preview-grid element not found in DOM");
+        }
+
+        if (fileInfoBar) {
+            fileInfoBar.classList.remove('hidden');
+            fileInfoBar.style.display = 'flex';
+        }
+
+        // Update Original Image
+        const previewContainer = document.querySelector('[data-preview-container]');
         if (previewContainer) {
-            // Find image element
-            let imgElement = previewContainer.querySelector('img');
+            const imgElement = previewContainer.querySelector('img');
             if (imgElement) {
                 imgElement.src = previewImage;
                 imgElement.alt = file.name;
+                // Force a redraw/check
+                imgElement.style.display = 'block';
+                console.log("Image src set. Container found.");
+            } else {
+                console.error("Critical: img element not found inside [data-preview-container]");
             }
+        } else {
+            console.error("Critical: [data-preview-container] selector failed");
+        }
 
-            // Update filename display
-            const filenameEl = previewContainer.querySelector('.text-xs.font-bold.truncate');
-            if (filenameEl) {
-                filenameEl.textContent = file.name;
-            }
+        // Update File Info
+        const filenameEl = document.getElementById('filename-display');
+        const filesizeEl = document.getElementById('filesize-display');
 
-            // Update file size display
-            const filesizeEl = previewContainer.querySelector('.text-\\[10px\\]');
-            if (filesizeEl) {
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                filesizeEl.textContent = `${sizeMB} MB`;
-            }
+        if (filenameEl) filenameEl.textContent = file.name;
+        if (filesizeEl) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            filesizeEl.textContent = `${sizeMB} MB`;
+        }
+
+        // Trigger Preprocessing Preview
+        if (typeof API_CONFIG !== 'undefined') {
+            fetchPreprocessingPreview(file);
+        } else {
+            console.error("API_CONFIG is not defined, cannot fetch preview");
         }
     };
 
+    reader.onerror = (e) => {
+        console.error("FileReader error:", e);
+        showError("Lỗi khi đọc file ảnh.");
+    };
+
     reader.readAsDataURL(file);
+}
+
+
+/**
+ * Reset upload state
+ */
+window.resetUpload = function () {
+    selectedFile = null;
+    previewImage = null;
+
+    // Hide preview
+    const previewGrid = document.getElementById('preview-grid');
+    const fileInfoBar = document.getElementById('file-info-bar');
+    if (previewGrid) previewGrid.style.display = 'none';
+    if (fileInfoBar) fileInfoBar.classList.add('hidden');
+
+    // Reset file input
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) fileInput.value = '';
+
+    console.log('Upload reset');
+}
+
+async function fetchPreprocessingPreview(file) {
+    const loadingEl = document.getElementById('processed-loading');
+
+    // UI Start State
+    if (loadingEl) loadingEl.classList.remove('hidden');
+
+    try {
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('return_steps', 'true');
+
+        console.log("DEBUG: API_CONFIG before fetch:", API_CONFIG);
+
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREVIEW}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Preview failed');
+        }
+
+        const data = await response.json();
+
+        // Run Animation
+        if (data.steps) {
+            await runPreprocessingAnimation(data.steps);
+        }
+
+    } catch (error) {
+        console.error('Preview error:', error);
+
+        // Show status error
+        const statusEl = document.getElementById('step-status');
+        const statusLabel = document.getElementById('step-label');
+        if (statusEl && statusLabel) {
+            statusEl.classList.remove('hidden');
+            statusEl.classList.replace('bg-black/70', 'bg-red-500/90');
+            statusEl.querySelector('span').classList.remove('bg-green-500', 'animate-pulse');
+            statusEl.querySelector('span').classList.add('bg-white');
+            statusLabel.textContent = "Preview Error";
+        }
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+    }
+}
+
+/**
+ * Run the preprocessing animation
+ * @param {Object} steps - Dictionary of base64 images {step_name: base64_string}
+ */
+async function runPreprocessingAnimation(steps) {
+    const previewContainer = document.querySelector('[data-preview-container]');
+    const imgElement = previewContainer ? previewContainer.querySelector('img') : null;
+    const statusEl = document.getElementById('step-status');
+    const statusLabel = document.getElementById('step-label');
+
+    if (!imgElement || !statusEl || !statusLabel) {
+        console.error("Animation elements not found");
+        return;
+    }
+
+    // Reset status UI
+    statusEl.classList.remove('hidden');
+    statusEl.classList.replace('bg-red-500/90', 'bg-black/70');
+    statusEl.querySelector('span').classList.remove('bg-white');
+    statusEl.querySelector('span').classList.add('bg-green-500', 'animate-pulse');
+
+    // Define sequence
+    const sequence = [
+        { key: 'original', label: 'Original Image', delay: 1000 },
+        { key: 'cropped', label: '1. Segmentation (Cropping)', delay: 1000 },
+        { key: 'resized', label: '2. Resize (300x300)', delay: 1000 },
+        { key: 'hair_removed', label: '3. Hair Removal', delay: 1200 },
+        { key: 'normalized', label: '4. Normalization (Final)', delay: 0 }
+    ];
+
+    // Prepare steps including original if available (it might not be in 'steps' object from backend if only processed steps returned)
+    // Actually backend returns 'original' in steps? Let's check. 
+    // If not, we rely on what's already there (original).
+
+    // Iterate through sequence
+    for (const step of sequence) {
+        if (step.key === 'original') {
+            // Just show status, image is already there or we don't have it in steps payload usually
+            statusLabel.textContent = step.label;
+        } else if (steps[step.key]) {
+            // Update image and label
+            statusLabel.textContent = step.label;
+
+            // Fade out slightly
+            imgElement.style.opacity = '0.8';
+
+            await new Promise(r => setTimeout(r, 100));
+
+            imgElement.src = steps[step.key];
+            imgElement.style.opacity = '1';
+        } else {
+            continue; // Skip missing steps
+        }
+
+        if (step.delay > 0) {
+            await new Promise(r => setTimeout(r, step.delay));
+        }
+    }
+
+    // Animation complete
+    statusEl.classList.replace('bg-black/70', 'bg-primary/90');
+    statusLabel.textContent = "Ready for Analysis";
+    statusEl.querySelector('span').classList.remove('animate-pulse');
 }
 
 /**

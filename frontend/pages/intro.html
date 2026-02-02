@@ -177,31 +177,56 @@
                 <!-- Right Column: Preview & Analysis -->
                 <div class="w-full lg:w-2/5 bg-[#f8fafc] dark:bg-[#0f1923]/30 p-6 md:p-10 flex flex-col gap-6">
                     <h3 class="text-xl font-bold text-[#101418] dark:text-white">Sẵn Sàng Phân Tích</h3>
-                    <!-- Image Preview Card -->
-                    <div data-preview-container
-                        class="relative group w-full aspect-[4/3] rounded-xl overflow-hidden shadow-sm bg-white dark:bg-[#2a3b47] border border-[#e5e7eb] dark:border-[#3e4c59]">
-                        <img alt="Hình ảnh da người để phân tích y khoa, hiển thị nốt hoặc vùng tổn thương"
-                            class="w-full h-full object-cover"
-                            data-alt="Hình ảnh da người để phân tích y khoa, hiển thị nốt hoặc vùng tổn thương"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGd2kU4k2344GWCx_zfRXWi0Ew0FrWiDpTQOg55s8atzFnle_cUecZJkLG4ViXc1t5QaOp1CRP8qX8hYCa5avaSzwxfx3uLw7CL9dRXS7p0kBmb7q06bzQqCEQrAo6RPitzcxiYqfaSUEggWZtFDiNaMMAnrRDMeQS51evqn9ntPVEwDASPwylGT9JLv6Y5hgNr1rXnhna9HKPqeuNdUp14U-g2wTfXAhizeEcBRuuqi9p024XUzqPGj0zvQpT11rD21bnp6hudym9" />
-                        <!-- Overlay actions -->
-                        <div class="absolute top-2 right-2">
-                            <button
-                                class="bg-white/90 dark:bg-black/70 p-2 rounded-full text-red-500 hover:text-red-600 hover:bg-white transition-all shadow-sm"
-                                title="Xóa Hình Ảnh">
-                                <span class="material-symbols-outlined text-xl">delete</span>
-                            </button>
-                        </div>
-                        <div class="absolute bottom-2 left-2 right-2">
-                            <div
-                                class="bg-white/90 dark:bg-[#1e293b]/90 backdrop-blur px-3 py-2 rounded-lg flex items-center justify-between shadow-sm">
-                                <div class="flex flex-col overflow-hidden">
-                                    <span class="text-xs font-bold truncate dark:text-white">scan_2023_10_24.jpg</span>
-                                    <span class="text-[10px] text-gray-500 dark:text-gray-400">2.4 MB</span>
+                    <!-- Image Preview Area -->
+                    <!-- Image Preview Area -->
+                    <div id="preview-grid" style="display: none;" class="flex flex-col gap-4">
+
+                        <!-- Original Image -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-gray-500 uppercase">Original Upload</span>
+                                <button onclick="resetUpload()"
+                                    class="text-xs text-red-500 hover:text-red-600 font-bold">
+                                    Remove
+                                </button>
+                            </div>
+                            <div data-preview-container
+                                class="relative group w-full aspect-video rounded-xl overflow-hidden shadow-sm bg-white dark:bg-[#2a3b47] border border-[#e5e7eb] dark:border-[#3e4c59]">
+                                <img alt="Original Upload"
+                                    class="w-full h-full object-contain transition-opacity duration-300" src="" />
+
+                                <!-- Animation Status Overlay -->
+                                <div id="step-status"
+                                    class="hidden absolute bottom-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/10 shadow-lg items-center gap-2 z-10">
+                                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span id="step-label">Processing...</span>
                                 </div>
-                                <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
                             </div>
                         </div>
+
+                        <!-- Processing Steps (Hidden, replaced by animation) -->
+                        <div id="processing-steps-container" class="hidden"></div>
+
+                        <!-- Loading State -->
+                        <div id="processed-loading"
+                            class="hidden flex flex-col items-center justify-center py-8 gap-3 bg-gray-50 dark:bg-[#1a2632] rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <div class="animate-spin text-primary">
+                                <span class="material-symbols-outlined text-3xl">settings_motion_mode</span>
+                            </div>
+                            <span class="text-xs font-medium text-gray-500">Running Segmentation & Enhancement...</span>
+                        </div>
+
+                    </div>
+
+                    <!-- File Info (Below Grid) -->
+                    <div id="file-info-bar"
+                        class="hidden bg-white dark:bg-[#1e293b] px-3 py-2 rounded-lg flex items-center justify-between shadow-sm border border-[#e5e7eb] dark:border-[#3e4c59]">
+                        <div class="flex flex-col overflow-hidden">
+                            <span class="text-xs font-bold truncate dark:text-white"
+                                id="filename-display">filename.jpg</span>
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400" id="filesize-display">0 MB</span>
+                        </div>
+                        <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
                     </div>
                     <!-- AI Confidence / Note -->
                     <div
@@ -232,10 +257,10 @@
         </div>
     </main>
     <!-- JavaScript Files -->
-    <script src="../js/config.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/app.js"></script>
-    <script src="../js/diagnose.js"></script>
+    <script src="../js/config.js?v=4"></script>
+    <script src="../js/utils.js?v=4"></script>
+    <script src="../js/app.js?v=4"></script>
+    <script src="../js/diagnose.js?v=4"></script>
 </body>
 
 </html>

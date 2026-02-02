@@ -3,7 +3,8 @@ Constants and disease information mappings
 """
 
 # Class names from model training (in order of model output)
-CLASS_NAMES = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']
+# Class names from model training (in order of model output)
+CLASS_NAMES = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'scc', 'vasc']
 
 # Vietnamese disease names mapping
 DISEASE_NAMES_VI = {
@@ -13,6 +14,7 @@ DISEASE_NAMES_VI = {
     'df': 'U xơ sợi da',
     'mel': 'Ung thư hắc tố (Melanoma)',
     'nv': 'Nốt ruồi lành tính',
+    'scc': 'Ung thư biểu mô tế bào vảy',
     'vasc': 'Tổn thương mạch máu'
 }
 
@@ -24,6 +26,7 @@ DISEASE_NAMES_EN = {
     'df': 'Dermatofibroma',
     'mel': 'Melanoma',
     'nv': 'Melanocytic Nevus',
+    'scc': 'Squamous Cell Carcinoma',
     'vasc': 'Vascular Lesions'
 }
 
@@ -35,6 +38,7 @@ RISK_LEVELS = {
     'df': 'low',
     'mel': 'very_high',
     'nv': 'low',
+    'scc': 'high',
     'vasc': 'medium'
 }
 
@@ -108,6 +112,16 @@ RECOMMENDATIONS = {
             'Tư vấn bác sĩ nếu có thay đổi bất thường'
         ],
         'urgency': 'Không cấp thiết'
+    },
+    'scc': {
+        'description': 'Ung thư biểu mô tế bào vảy là loại ung thư da phổ biến thứ hai, phát triển từ tế bào vảy ở lớp ngoài cùng của da.',
+        'actions': [
+            'Khám bác sĩ da liễu để chẩn đoán và điều trị',
+            'Thường cần phẫu thuật cắt bỏ',
+            'Có thể xâm lấn nếu không điều trị sớm',
+            'Tránh ánh nắng mặt trời trực tiếp'
+        ],
+        'urgency': 'Cần khám sớm'
     },
     'vasc': {
         'description': 'Tổn thương mạch máu da là các thay đổi liên quan đến mạch máu dưới da.',

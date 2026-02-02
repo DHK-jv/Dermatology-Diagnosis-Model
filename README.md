@@ -2,202 +2,129 @@
 
 **Dự án phân loại 7 loại bệnh da bằng Deep Learning sử dụng EfficientNet-B3**
 
-**Giai đoạn hiện tại:** ✅ Đã hoàn thành tiền xử lý dữ liệu + Train trên Kaggle (đạt ~80% accuracy)
+**Giai đoạn hiện tại:** ✅ Đã nâng cấp lên dataset ISIC 2019 (25k ảnh) để cải thiện độ chính xác.
 
----
 
 ## 📊 Tổng Quan Dự Án
 
-Đây là dự án nghiên cứu sử dụng AI để phân loại các bệnh về da dựa trên ảnh dermoscopy (ảnh da qua kính hiển vi). Dự án sử dụng dataset **HAM10000** với chính xác **10,015 ảnh** và 7 loại bệnh khác nhau.
+Đây là dự án nghiên cứu sử dụng AI để phân loại các bệnh về da dựa trên ảnh dermoscopy. Dự án sử dụng dataset **ISIC 2019** với **25,331 ảnh** và **8 loại bệnh**.
 
 **Kết quả đạt được:**
-- ✅ Preprocessing hoàn tất với YOLO segmentation + hair removal
-- ✅ Dataset đã xử lý: `processed_data.zip` (tất cả ảnh đã qua tiền xử lý)
-- ✅ Model EfficientNet-B3 đạt **80.04%** test accuracy (70 epochs)
-- ✅ Training trên Kaggle với GPU P100
-- ⏳ Chưa deploy production
+- ✅ Dataset ISIC 2019.
+- ✅ Quy trình tiền xử lý tự động (Resize 300x300, Stratified Split).
+- ✅ Model EfficientNet-B3.
+- ✅ Training trên Kaggle tối ưu hóa.
 
----
 
 ## 📁 Cấu Trúc Dự Án Chi Tiết
 
-```
 MedAI_Dermatology/
 │
-├── 📂 data/                        # THƯ MỤC DỮ LIỆU
-│   ├── raw/                        # Dữ liệu gốc chưa xử lý
-│   │   ├── images/                 # ~10,000 ảnh da gốc (ISIC 2018/HAM10000)
-│   │   └── metadata.csv            # Thông tin bệnh nhân, nhãn bệnh
+├── 📂 backend/                    # 🖥️ BACKEND SYSTEM (FastAPI)
+│   ├── app/                           # Source code chính của backend
+│   │   ├── models/                    # Pydantic schemas (Request/Response models)
+│   │   ├── services/                  # Business Logic (Inference, Preprocessing, Storage)
+│   │   ├── utils/                     # Utility functions
+│   │   ├── config.py                  # Cấu hình hệ thống (Settings)
+│   │   ├── database.py                # Quản lý kết nối MongoDB
+│   │   └── main.py                    # Entry point, định nghĩa API Endpoints
 │   │
-│   ├── masks/                      # Mask vùng tổn thương
-│   │   └── lesion/                 # Ảnh mask đen trắng (vùng bệnh = trắng)
+│   ├── ml_models/                 # 🧠 KHO CHỨA MODELS AI
+│   │   ├── efficientnet_b3_derma_v1.0_kaggle32e.keras # Model phân loại chính
+│   │   └── yolov8n-seg.pt             # Model Segmentation (tách vùng da)
 │   │
-│   └── processed/                  # Dữ liệu đã tiền xử lý XONG
-│       ├── train/                  # 70% data (~7,010 ảnh) - Để train model
-│       │   ├── akiec/              # Từng folder cho từng loại bệnh
-│       │   ├── bcc/
-│       │   ├── bkl/
-│       │   ├── df/
-│       │   ├── mel/
-│       │   ├── nv/
-│       │   └── vasc/
-│       ├── val/                    # 15% data (~1,502 ảnh) - Validation
-│       └── test/                   # 15% data (~1,502 ảnh) - Test cuối cùng
+│   ├── uploads/                   # Thư mục tạm lưu ảnh upload
+│   ├── history.json                   # Local database (fallback)
+│   ├── requirements.txt               # Dependencies cho Backend
+│   ├── start_backend.sh               # Script khởi động Backend
+│   └── .env                           # Biến môi trường (DB URL, Secrets)
 │
-├── 📂 src/                         # MÃ NGUỒN CHƯƠNG TRÌNH
-│   ├── preprocessing/              # Code tiền xử lý ảnh
-│   │   ├── hybrid_pipeline.py      # Pipeline chính
-│   │   │                           # - Dùng YOLO để crop vùng bệnh
-│   │   │                           # - Loại bỏ lông (hair removal)
-│   │   │                           # - Resize về 300x300
-│   │   │                           # - Split train/val/test
-│   │   ├── yolo_segmentor.py       # YOLO segmentation
-│   │   └── process_dataset.py      # Xử lý dataset
-│   │
-│   ├── models/                     # Định nghĩa các model AI
-│   │   ├── efficientnet_clf.py     # EfficientNet-B3 classifier
-│   │   └── unet_segmentor.py       # U-Net segmentation
-│   │
-│   ├── utils/                      # Tiện ích
-│   │   └── tf_config.py            # Config TensorFlow/GPU
-│   └── train.py                    # SCRIPT TRAIN CHÍNH
-│                                   # - Load data từ processed/
-│                                   # - Train model 2 phase
-│                                   # - Save model vào models/
+├── 📂 frontend/                  # 🌐 GIAO DIỆN NGƯỜI DÙNG
+│   ├── assets/                        # Images, logos
+│   ├── css/                           # Stylesheets
+│   ├── js/                            # JavaScript logic (App, API, Diagnose)
+│   ├── pages/                         # HTML sub-pages (Diagnose, History, Result)
+│   ├── index.html                     # Trang chủ
+│   └── start_frontend.sh       # Script khởi động Frontend server
 │
-├── 📂 notebooks/                   # JUPYTER NOTEBOOKS
-│   ├── 01_eda_data.ipynb          # Phân tích dữ liệu ban đầu
-│   │                               # - Check số lượng ảnh mỗi class
-│   │                               # - Visualize mẫu ảnh
-│   │                               # - Kiểm tra imbalanced data
+├── 📂 src/                            # ⚙️ DEV & TRAINING CORE (Trái tim của dự án AI)
+│   │  *Vai trò: Chứa toàn bộ mã nguồn xử lý dữ liệu, định nghĩa model và training.*
 │   │
-│   ├── 02_processed_data_check.ipynb  # Kiểm tra data sau preprocessing
-│   │                                  # - Verify dimensions (300x300)
-│   │                                  # - Check class distribution
-│   │                                  # - Xem samples đã xử lý
+│   ├── 📄 train.py                    # 🚀 Script huấn luyện chính
+│   │   # - Đọc dữ liệu từ data/processed
+│   │   # - Xây dựng model từ src/models
+│   │   # - Chạy training loop và lưu model (.keras)
 │   │
-│   └── kaggle-train-efficientnet.ipynb  # NOTEBOOK TRAIN CHÍNH
-│                                        # - Chạy trên Kaggle với GPU P100
-│                                        # - 2-phase training
-│                                        # - Data augmentation
-│                                        # - Đạt ~80% accuracy
+│   ├── 📂 preprocessing/              # 🛠️ Module Tiền xử lý ảnh (Preprocessing)
+│   │   # Biến ảnh thô thành ảnh sạch để AI học tốt hơn.
+│   │   ├── 📄 hybrid_pipeline.py      # Pipeline xử lý lai (Hybrid): Hair removal, Color balance...
+│   │   ├── 📄 yolo_segmentor.py       # Chạy model YOLOv8 để cắt vùng bệnh (Segmentation)
+│   │   ├── 📄 process_dataset.py      # Script xử lý hàng loạt dataset thô sang sạch
+│   │   └── 📄 prepare_isic_data.py    # Script chuyên biệt cho bộ dữ liệu ISIC 2019
+│   │
+│   ├── 📂 models/                     # 🧠 Kiến trúc Model (Model Architectures)
+│   │   # Nơi định nghĩa "hình dáng" của mạng nơ-ron.
+│   │   ├── 📄 efficientnet_clf.py     # Kiến trúc EfficientNet-B3 (Phân loại bệnh)
+│   │   └── 📄 unet_segmentor.py       # Kiến trúc U-Net (Phân vùng ảnh - nếu tự train)
+│   │
+│   ├── 📂 data_management/            # 💾 Quản lý dữ liệu
+│   │   └── 📄 merge_and_reconstruct.py # Công cụ gộp/tái cấu trúc dataset
+│   │
+│   └── 📂 utils/                      # 🔧 Tiện ích chung
+│       └── 📄 tf_config.py            # Cấu hình TensorFlow (GPU memory growth, etc.)
 │
-├── 📂 models/                      # LƯU MODEL ĐÃ TRAIN
-│   └── yolov8n-seg.pt              # Model YOLO segmentation (6.8MB)
-│                                   # Dùng để crop vùng bệnh trong preprocessing
+├── 📂 infrastructure/                 # 🏗️ DEVOPS & DEPLOYMENT
+│   ├── docker/                        # Config files cho Docker
+│   └── nginx/                         # Config Nginx
 │
-├── 📂 backend/                     # BACKEND API (CHƯA TRIỂN KHAI)
-│   ├── app/                        # Thư mục ứng dụng FastAPI
-│   │   ├── __init__.py            # Package initialization
-│   │   ├── main.py                # FastAPI app chính, định nghĩa endpoints
-│   │   │                          # - POST /api/v1/predict (upload ảnh, trả về dự đoán)
-│   │   │                          # - GET /api/v1/history (lịch sử chẩn đoán)
-│   │   │                          # - GET /api/v1/statistics (thống kê)
-│   │   ├── config.py              # Configuration (MongoDB URI, model path, v.v.)
-│   │   ├── database.py            # MongoDB connection manager
-│   │   │
-│   │   ├── models/                # Pydantic schemas (request/response models)
-│   │   │   ├── __init__.py
-│   │   │   └── schemas.py         # PredictionRequest, PredictionResponse, etc.
-│   │   │
-│   │   ├── services/              # Business logic layer
-│   │   │   ├── __init__.py
-│   │   │   ├── preprocessing.py   # Tiền xử lý ảnh upload (resize, normalize)
-│   │   │   ├── inference.py       # Load model, chạy prediction
-│   │   │   └── storage.py         # Lưu/lấy data từ MongoDB
-│   │   │
-│   │   └── utils/                 # Utilities
-│   │       ├── __init__.py
-│   │       └── constants.py       # Class names, recommendations, v.v.
-│   │
-│   ├── ml_models/                 # Lưu model để deploy
-│   │   ├── efficientnet_b3_derma_finetuned.keras  # Model đã train
-│   │   └── README.md              # Hướng dẫn về model
-│   │
-│   ├── tests/                     # Unit tests
-│   │   ├── test_preprocessing.py
-│   │   ├── test_inference.py
-│   │   └── test_api.py
-│   │
-│   ├── requirements.txt           # Python dependencies cho backend
-│   ├── .env.example               # Template cho environment variables
-│   ├── Dockerfile                 # Docker image cho backend
-│   └── README.md                  # Hướng dẫn backend
+├── 📂 research/                   # 🔬 NGHIÊN CỨU & KẾT QUẢ
+│   ├── 📂 notebooks/                  # Jupyter Notebooks
+│   │   ├── 01_eda_data.ipynb          # Phân tích dữ liệu
+│   │   ├── 02_processed_data_check.ipynb # Kiểm tra dữ liệu sau xử lý
+│   │   └── isic-2019-efficientnetb3-kaggle-train.ipynb # Notebook training chính
+│   └── 📂 reports/                    # Báo cáo & Kết quả visualize
+│       ├── 📂 gradcam/                # Kết quả Grad-CAM (Heatmaps)
+│       └── preprocessing_pipeline.png # Sơ đồ luồng xử lý ảnh
 │
-├── 📂 frontend/                    # FRONTEND WEB (CHƯA TRIỂN KHAI)
-│   ├── index.html                 # Trang chính
-│   ├── pages/                     # Trang chính
-│   │   ├── diagnose.html          # Trang upload & chẩn đoán
-│   │   ├── result.html            # Trang hiển thị kết quả
-│   │   ├── history.html           # Trang lịch sử chẩn đoán
-│   │
-│   ├── css/                       # Stylesheets
-│   │   ├── style.css              # Main styles
-│   │   ├── diagnose.css           # Styles cho trang chẩn đoán
-│   │   └── responsive.css         # Responsive design
-│   │
-│   ├── js/                        # JavaScript
-│   │   ├── app.js                 # Main app logic
-│   │   ├── config.js              # API endpoint configs
-│   │   ├── diagnose.js            # Upload & call API logic
-│   │   ├── result.js              # Hiển thị kết quả
-│   │   └── history.js             # Lấy & hiển thị lịch sử
-│   │
-│   ├── assets/                    # Static assets
-│   │   ├── images/                # Logos, icons, placeholders
-│   │   └── fonts/                 # Custom fonts (nếu có)
-│   │
-│   └── README.md                  # Hướng dẫn frontend
+├── 📂 data/                       # 💾 KHO DỮ LIỆU
+│   ├── raw/                           # Dữ liệu thô (Images, Metadata)
+│   ├── processed/                     # Dữ liệu đã xử lý (Train/Val/Test split)
+│   └── masks/                         # Dữ liệu phân vùng (Segmentation)
+│       └── lesion/                    # Mask vùng bệnh (Ground Truth)
 │
-├── 📂 infrastructure/              # CẤU HÌNH DEPLOYMENT (CHƯA DÙNG)
-│   ├── nginx/                      # Nginx config
-│   │   └── nginx.conf             # Reverse proxy, serve static files
-│   ├── docker-compose.yml          # Docker multi-container setup
-│   │                              # - MongoDB service
-│   │                              # - Backend service
-│   │                              # - Nginx service
-│   └── .env                        # Environment variables cho deployment
-│
-├── 📂 reports/                     # BÁO CÁO & KẾT QUẢ
-│   ├── figures/                    # Charts, graphs (chưa có data)
-│   └── tables/                     # Metrics CSV (chưa có data)
-│
-├── 📄 requirements.txt             # DANH SÁCH THƯ VIỆN PYTHON CẦN CÀI
-├── 📄 .gitignore                   # Git ignore rules
-├── 📄 visualize_preprocessing.py   # Script visualize preprocessing
-└── 📄 README.md                    # File này (tài liệu chính)
-```
-
+├── 📄 visualize_preprocessing.py       # Script demo xử lý ảnh
+├── 📄 processed_isic_2019.zip         # Packed dataset cho Kaggle
+└── 📄 README.md                       # Tài liệu chính
 ---
 
-## 🎯 Dataset: HAM10000
+## 🎯 Dataset: ISIC 2019
 
-**Nguồn:** HAM10000 (Human Against Machine with 10,000 training images)
+**Nguồn:** ISIC 2019 Challenge (bao gồm HAM10000, BCN_20000, MSK).
 
 **File dữ liệu:**
-- `processed_data.zip` - Chứa tất cả 10,015 ảnh đã qua tiền xử lý
-- Đã crop vùng tổn thương, loại bỏ lông, resize 300x300
-- Chia sẵn thành train/val/test folders
+- `processed_isic_2019.zip` - Chứa 25,331 ảnh đã resize 300x300
+- Đã chia sẵn thành train/val/test folders theo tỷ lệ 80/10/10
 
-### 7 Loại Bệnh Da (Classes):
+### 8 Loại Bệnh Da (Classes):
 
 | Mã | Tên Tiếng Việt | Tên Tiếng Anh | Mức độ nguy hiểm |
 |----|----------------|---------------|------------------|
-| `akiec` | Ung thư biểu mô | Actinic Keratoses | ⚠️ Cao |
+| `akiec` | Dày sừng quang hóa | Actinic Keratoses | ⚠️ Cao |
 | `bcc` | Ung thư tế bào đáy | Basal Cell Carcinoma | ⚠️ Cao |
 | `bkl` | Sừng hóa lành tính | Benign Keratosis | ✅ Thấp |
 | `df` | U xơ sợi da | Dermatofibroma | ✅ Thấp |
 | `mel` | Ung thư hắc tố (Melanoma) | Melanoma | 🔴 Rất cao |
 | `nv` | Nốt ruồi lành tính | Melanocytic Nevus | ✅ Thấp |
+| `scc` | Ung thư biểu mô TB vảy | Squamous Cell Carcinoma | ⚠️ Cao |
 | `vasc` | Tổn thương mạch máu | Vascular Lesions | ⚠️ Trung bình |
 
 ### Phân Chia Dữ Liệu:
 
 ```
-Tổng: 10,015 ảnh (chính xác)
-├── Train:      70% (~7,010 ảnh) - Để huấn luyện model
-├── Validation: 15% (~1,502 ảnh) - Để theo dõi trong quá trình train
-└── Test:       15% (~1,503 ảnh) - Đánh giá cuối cùng
+Tổng: 25,331 ảnh
+├── Train:      80% (~20,264 ảnh)
+├── Validation: 10% (~2,533 ảnh)
+└── Test:       10% (~2,534 ảnh)
 ```
 
 ---
@@ -208,7 +135,8 @@ Tổng: 10,015 ảnh (chính xác)
 
 ```bash
 # Chạy preprocessing pipeline
-python src/preprocessing/hybrid_pipeline.py
+# Chạy ISIC preprocessing script
+python src/preprocessing/prepare_isic_data.py
 ```
 
 **Pipeline gồm các bước:**
@@ -240,18 +168,18 @@ python src/preprocessing/hybrid_pipeline.py
 ### Bước 2: Training Model trên Kaggle
 
 **Dataset trên Kaggle:**
-- Upload `processed_data.zip` lên Kaggle Dataset
-- File chứa tất cả 10,015 ảnh đã preprocessing
+**Dataset trên Kaggle:**
+- Upload `processed_isic_2019.zip` lên Kaggle Dataset
+- File chứa 25k ảnh đã preprocessing
 - Extract trong notebook để dùng
 
 ```bash
 # Mở notebook trên Kaggle:
-# notebooks/kaggle-train-efficientnet.ipynb
+# research/notebooks/kaggle-train-efficientnet.ipynb
 
 # Trong notebook Kaggle:
-# 1. Add dataset: processed_data.zip
-# 2. Extract: !unzip ../input/your-dataset/processed_data.zip
-# 3. Run training code
+# Add dataset: processed_isic_2019.zip
+# Run training code
 ```
 
 **Kiến Trúc Model:**
@@ -267,7 +195,7 @@ Dense(512, activation='relu')
     ↓
 Dropout(0.5)  ← Tránh overfitting
     ↓
-Dense(7, activation='softmax')  ← 7 classes
+Dense(8, activation='softmax')  ← 8 classes
     ↓
 Output: Xác suất cho 7 loại bệnh
 ```
@@ -338,3 +266,42 @@ chmod +x start_frontend.sh # Cấp quyền thực thi nếu cần
 ./start_frontend.sh
 ```
 *Frontend sẽ chạy tại: `http://localhost:3000`*
+
+## 🏗️ Chi Tiết Hạ Tầng (Infrastructure)
+
+### Nginx Configuration (`infrastructure/nginx/medai_nginx.conf`)
+
+File cấu hình Nginx đóng vai trò là **Web Server & Reverse Proxy**, giúp hệ thống hoạt động ổn định và bảo mật hơn.
+
+**Chức năng chính:**
+
+1.  **Serve Frontend (Giao diện):**
+    *   Trỏ root về folders: `/home/khangjv/WorkSpace/MedAI_Dermatology/frontend`
+    *   Khi truy cập `http://localhost`, Nginx sẽ tải file `index.html` từ thư mục này.
+
+2.  **Reverse Proxy cho Backend (API):**
+    *   Chuyển tiếp (forward) các request từ `/api/` đến Backend server (`http://localhost:8000`).
+    *   Giúp Frontend gọi API mà không gặp lỗi Cross-Origin Resource Sharing (CORS).
+    *   **Settings quan trọng:**
+        *   `client_max_body_size 10M;`: Cho phép upload ảnh lên đến 10MB (cần thiết cho ảnh da liễu độ phân giải cao).
+
+3.  **Caching Tĩnh (Static Files):**
+    *   Tối ưu hóa tốc độ tải trang bằng cách cache các file tĩnh (ảnh, CSS, JS) trong 1 năm.
+
+**Sơ đồ luồng dữ liệu:**
+```
+User -> Nginx (Port 80)
+        ├── /       -> Frontend (Static Files)
+        └── /api/*  -> Backend (Python FastAPI - Port 8000)
+```
+
+## Công Nghệ
+
+- **HTML/CSS**: Tailwind CSS (via CDN)
+- **JavaScript**: Vanilla JS (ES6+)
+- **Design**: Google Material Symbols, Inter font
+- **Backend API**: FastAPI tại `http://localhost:8000`
+- **FastAPI**: Web framework hiện đại, nhanh
+- **TensorFlow**: Load và chạy model EfficientNet-B3
+- **MongoDB** (optional): Lưu lịch sử chẩn đoán
+- **Fallback JSON**: Tự động dùng file JSON nếu không có MongoDB

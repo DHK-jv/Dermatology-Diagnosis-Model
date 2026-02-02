@@ -102,3 +102,21 @@ class HealthResponse(BaseModel):
     model_loaded: bool = Field(..., description="Whether AI model is loaded")
     version: str = Field(..., description="API version")
     timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class PreviewResponse(BaseModel):
+    """Response model for preprocessing preview endpoint"""
+    processed_image: str = Field(..., description="Base64 encoded processed image")
+    steps: Optional[Dict[str, str]] = Field(None, description="Base64 encoded intermediate steps")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "processed_image": "data:image/jpeg;base64,...",
+                "steps": {
+                    "original": "data:image/jpeg;base64,...",
+                    "cropped": "data:image/jpeg;base64,...",
+                    "hair_removed": "data:image/jpeg;base64,..."
+                }
+            }
+        }

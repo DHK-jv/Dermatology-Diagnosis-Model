@@ -41,37 +41,119 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
         return False, f"File không phải là ảnh hợp lệ: {str(e)}"
 
 
-def preprocess_image(image_bytes: bytes) -> np.ndarray:
+
+# Initialize pipeline once to avoid reloading YOLO model repeatedly
+try:
+    # Append project root to path so we can import src
+    import sys
+    sys.path.append(str(settings.PROJECT_ROOT))
+    from src.preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+    
+    pipeline = HybridPreprocessingPipeline(
+        mode='auto', 
+        target_size=settings.IMAGE_SIZE,
+        device='cpu' # Use CPU for backend to save resources
+    )
+    PIPELINE_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ Failed to load HybridPreprocessingPipeline: {e}")
+    PIPELINE_AVAILABLE = False
+
+
+def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     """
-    Preprocess image for model input
+    Preprocess image for model input using Hybrid Pipeline
     
     Args:
         image_bytes: Raw image bytes
+        return_steps: Whether to return intermediate steps
         
     Returns:
-        Preprocessed image array ready for model (shape: (1, 300, 300, 3))
+        If return_steps=False:
+            Preprocessed image array ready for model (shape: (1, 300, 300, 3))
+        If return_steps=True:
+            Tuple (img_array, steps_dict)
     """
     # Open image
     img = Image.open(io.BytesIO(image_bytes))
     
-    # Convert to RGB (in case of RGBA or grayscale)
+    # Convert to RGB
     if img.mode != 'RGB':
         img = img.convert('RGB')
     
-    # Resize to model input size
-    img = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
+    # Convert to numpy array for pipeline
+    img_np = np.array(img)
     
-    # Convert to numpy array
-    img_array = np.array(img, dtype=np.float32)
+    if PIPELINE_AVAILABLE:
+        try:
+            # Use the hybrid pipeline (YOLO/OpenCV)
+            if return_steps:
+                result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
+                
+                # Add batch dimension to result
+                result_batch = np.expand_dims(result, axis=0)
+                
+                # Normalize steps back to 0-255 if they are 0-1
+                normalized_steps = {}
+                for key, val in steps.items():
+                    if val.dtype == np.float32 or val.dtype == np.float64:
+                        if val.max() <= 1.05:
+                            val = (val * 255).astype(np.uint8)
+                        else:
+                            val = val.astype(np.uint8)
+                    else:
+                        val = val.astype(np.uint8)
+                    normalized_steps[key] = val
+                    
+                return result_batch * 255.0, normalized_steps
+            else:
+                return np.expand_dims(result, axis=0) * 255.0
+                
+        except Exception as e:
+            print(f"Hybrid Pipeline failed: {e}. Attempting pure OpenCV fallback.")
+            
+            # Fallback to OpenCV pipeline (skips segmentation if no mask, but does Hair Removal)
+            # Use the opencv_pipeline instance inside the hybrid pipeline if available
+            try:
+                if return_steps:
+                    result, steps = pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=True)
+                    
+                    # Add batch dimension
+                    result_batch = np.expand_dims(result, axis=0)
+                    
+                    # Normalize steps
+                    normalized_steps = {}
+                    for key, val in steps.items():
+                         if val.dtype == np.float32 or val.dtype == np.float64:
+                             if val.max() <= 1.05:
+                                  val = (val * 255).astype(np.uint8)
+                             else:
+                                  val = val.astype(np.uint8)
+                         else:
+                             val = val.astype(np.uint8)
+                         normalized_steps[key] = val
+                         
+                    return result_batch * 255.0, normalized_steps
+                else:
+                    result = pipeline.opencv_pipeline.process(img_np, mask=None)
+                    return np.expand_dims(result, axis=0) * 255.0
+            except Exception as e2:
+                print(f"OpenCV fallback failed: {e2}. Using basic resize.")
     
-    # Normalize to [0, 1] range (EfficientNet expects this)
-    # kwjv: Removed normalization because model expects [0, 255]
-    # img_array = img_array / 255.0
+    # Ultimate Fallback: Basic Resize
+    img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
+    img_array = np.array(img_resized, dtype=np.float32)
+    # img_array = img_array / 255.0 # Check if model needs this
     
-    # Add batch dimension
-    img_array = np.expand_dims(img_array, axis=0)
-    
-    return img_array
+    if return_steps:
+        # Return basic steps for fallback
+        steps = {
+            'original': np.array(img),
+            'resized': np.array(img_resized)
+        }
+        return np.expand_dims(img_array, axis=0), steps
+        
+    return np.expand_dims(img_array, axis=0)
 
 
 async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:
