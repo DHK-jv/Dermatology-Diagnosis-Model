@@ -13,12 +13,10 @@ processed_isic_2019.zip
 *.rar
 *.tar.gz
 
-# Data Directories (Exclude all except sample)
-data/processed/
-data/raw/
-data/masks/
-# Allow sample data folder (will be created)
-!data/sample/
+# Data Directories (Exclude ALL by default)
+data/
+# processed_isic_2019.zip is already ignored by *.zip but good to be explicit
+processed_isic_2019.zip
 
 # Model Weights (Large files)
 *.keras
