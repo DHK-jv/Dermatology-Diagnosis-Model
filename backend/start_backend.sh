@@ -31,8 +31,9 @@ else
 fi
 
 # Install dependencies if needed
-echo "📦 Checking dependencies..."
-pip install -q -r requirements.txt
+echo "📦 Checking and installing dependencies..."
+echo "   (This may take a few minutes for the first run, especially for TensorFlow)"
+pip install -r requirements.txt
 
 # Check if model file exists
 # Check if model file exists
