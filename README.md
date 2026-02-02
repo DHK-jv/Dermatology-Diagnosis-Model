@@ -1,5 +1,7 @@
 # 🏥 MedAI Dermatology - Hệ Thống AI Chẩn Đoán Bệnh Da
 
+# Thực hiện bởi: Dương Hoàng Khang - 223952 - DH22KPM01
+
 **Dự án phân loại 8 loại bệnh da bằng Deep Learning sử dụng EfficientNet-B3**
 
 **Giai đoạn hiện tại:** ✅ Đã nâng cấp lên dataset ISIC 2019 (25k ảnh) để cải thiện độ chính xác.
