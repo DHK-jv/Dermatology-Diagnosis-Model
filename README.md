@@ -31,13 +31,6 @@ python run.py
 
 ```
 
-**Script này sẽ tự động lo từ A-Z:**
-
-1. 🛠️ Tạo môi trường ảo `.venv` (nếu chưa có).
-2. 📥 Cài đặt đầy đủ thư viện cần thiết.
-3. 🔥 Bật cả Backend và Frontend cùng lúc.
-4. 🌐 Tự động mở trình duyệt web cho bạn.
-
 ## 📁 Cấu Trúc Dự Án Chi Tiết
 
 ```bash
@@ -148,13 +141,10 @@ MedAI_Dermatology/
 
 Dữ liệu được chia theo tỷ lệ **80/10/10** (Stratified Split):
 
-```mermaid
-pie title Cấu trúc Dataset (25,331 ảnh)
-    "Train (80%)" : 20264
-    "Validation (10%)" : 2533
-    "Test (10%)" : 2534
-
-```
+Cấu trúc Dataset (25,331 ảnh)
+- Train (80%): 20264
+- Validation (10%): 2533
+- Test (10%): 2534
 
 ---
 
@@ -166,10 +156,10 @@ pie title Cấu trúc Dataset (25,331 ảnh)
 python src/preprocessing/prepare_isic_data.py
 
 
-1. **YOLO Segmentation:** Dùng `yolov8n-seg` để phát hiện và tách nền, chỉ giữ lại vùng tổn thương.
-2. **Hair Removal:** Thuật toán DullRazor loại bỏ lông, tránh gây nhiễu cho model.
-3. **Chuẩn hóa:** Resize về `300x300` và chuẩn hóa pixel `[0-1]`.
-4. **Inference:** Model EfficientNet-B3 đưa ra xác suất cho 8 lớp bệnh.
+1. YOLO Segmentation: Dùng `yolov8n-seg` để phát hiện và tách nền, chỉ giữ lại vùng tổn thương.
+2. Hair Removal: Thuật toán DullRazor loại bỏ lông, tránh gây nhiễu cho model.
+3. Chuẩn hóa: Resize về `300x300` và chuẩn hóa pixel `[0-1]`.
+4. Inference: Model EfficientNet-B3 đưa ra xác suất cho 8 lớp bệnh.
 
 ---
 
@@ -180,12 +170,8 @@ python src/preprocessing/prepare_isic_data.py
 * **Model:** EfficientNet-B3 (Pre-trained ImageNet).
 * **Kết quả:** Final TTA Accuracy: **83.58%**.
 
----
+```
 
 ## ⚠️ Lưu Ý Quan Trọng
 
-> **Disclaimer:** Hệ thống này được xây dựng nhằm mục đích nghiên cứu và hỗ trợ học tập. Kết quả dự đoán của AI chỉ mang tính chất tham khảo và **không thay thế cho chẩn đoán của bác sĩ chuyên khoa**.
-
-```
-
-```
+Disclaimer: Hệ thống này được xây dựng nhằm mục đích nghiên cứu và hỗ trợ học tập. Kết quả dự đoán của AI chỉ mang tính chất tham khảo và không thay thế cho chẩn đoán của bác sĩ chuyên khoa.
