@@ -189,29 +189,43 @@ python src/preprocessing/prepare_isic_data.py
 - Lưu model vào `backend/ml_models/efficientnet_b3_derma_v1.0_kaggle32e.keras` (32 epochs)
 
 
-### Chạy Ứng Dụng
+### 🚀 Chạy Ứng Dụng (Quick Start)
 
-Bạn cần mở 2 cửa sổ terminal để chạy cả Backend và Frontend.
 
-#### 1. Chạy Backend (Terminal 1)
-Script này sẽ tự động tạo virtual environment, cài thư viện và start server:
+#### Cách 1: Chạy tự động
 
+- Clone về repository: 
+```bash
+# git clone https://github.com/DHK-jv/Dermatology-Diagnosis-Model.git
+```
+
+- Chạy script run.sh
+```bash
+# chmod +x run.sh  # Cấp quyền thực thi nếu cần
+# ./run.sh        # Chạy script
+```
+
+Hệ thống sẽ:
+1. Tự động kiểm tra và cài đặt thư viện thiếu (phía Backend)
+2. Tự động khởi chạy Backend Server (API)
+3. Hướng dẫn bạn mở Frontend (Trang web)
+
+#### Cách 2: Chạy thủ công từng phần
+Nếu bạn muốn debug hoặc chạy riêng lẻ:
+
+**Backend:**
 ```bash
 cd backend
-chmod +x start_backend.sh  # Cấp quyền thực thi nếu cần
 ./start_backend.sh
 ```
-*Backend sẽ chạy tại: `http://localhost:8000`*
+*Backend API: `http://localhost:8000`*
 
-#### 2. Chạy Frontend (Terminal 2)
-Script này sẽ start một web server đơn giản cho frontend:
-
+**Frontend:**
 ```bash
 cd frontend
-chmod +x start_frontend.sh # Cấp quyền thực thi nếu cần
 ./start_frontend.sh
 ```
-*Frontend sẽ chạy tại: `http://localhost:3000`*
+*Frontend: `http://localhost:3000`*
 
 
 ## 🔍 Inference Pipeline (Production Flow)
