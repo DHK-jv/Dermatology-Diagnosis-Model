@@ -11,11 +11,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = BASE_DIR / "backend"
 FRONTEND_DIR = BASE_DIR / "frontend"
-VENV_DIR = BASE_DIR / ".venv"  # Thống nhất dùng .venv ở root cho cả dự án
+VENV_DIR = BASE_DIR / ".venv"
 BACKEND_PORT = 8000
 FRONTEND_PORT = 3000
 
-# Màu sắc cho log đẹp
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
@@ -24,7 +23,6 @@ class Colors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     
-    # Hỗ trợ Windows (mặc định Windows cmd cũ không hiển thị màu)
     if platform.system() == "Windows":
         try:
             import colorama
@@ -93,11 +91,7 @@ def run_system():
     processes = []
     venv_python = get_venv_python()
     
-    try:
-        print(f"{Colors.HEADER}======================================={Colors.ENDC}")
-        print(f"{Colors.HEADER}   MEDAI DERMATOLOGY DIAGNOSIS SYSTEM  {Colors.ENDC}")
-        print(f"{Colors.HEADER}======================================={Colors.ENDC}")
-        
+    try:     
         # 1. Chuẩn bị môi trường
         check_and_create_venv()
         check_and_install_requirements()

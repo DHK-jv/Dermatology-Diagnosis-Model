@@ -15,9 +15,12 @@ from typing import Optional, Union, Tuple
 # Import YOLO (with fallback)
 try:
     try:
-        from preprocessing.yolo_segmentor import YOLOSegmentor, YOLO_AVAILABLE
+        from src.preprocessing.yolo_segmentor import YOLOSegmentor, YOLO_AVAILABLE
     except ImportError:
-        from yolo_segmentor import YOLOSegmentor, YOLO_AVAILABLE
+        try:
+            from preprocessing.yolo_segmentor import YOLOSegmentor, YOLO_AVAILABLE
+        except ImportError:
+            from yolo_segmentor import YOLOSegmentor, YOLO_AVAILABLE
 except ImportError:
     YOLO_AVAILABLE = False
     print("⚠️  Warning: YOLO module not found")
@@ -277,8 +280,8 @@ class HybridPreprocessingPipeline:
         if image is None or image.size == 0:
             raise ValueError("Invalid image input")
         
-        # Determine segmentation method
         use_yolo = False
+        result = None
         
         if self.mode == 'yolo':
             # Force YOLO

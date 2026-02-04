@@ -107,6 +107,7 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
                     
                 return result_batch * 255.0, normalized_steps
             else:
+                result = pipeline.process(img_np, return_steps=False, verbose=False)
                 return np.expand_dims(result, axis=0) * 255.0
                 
         except Exception as e:
