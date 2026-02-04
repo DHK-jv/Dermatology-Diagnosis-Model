@@ -3,9 +3,8 @@ opencv-python
 numpy
 pandas
 matplotlib
-fastapi
-uvicorn
 ultralytics>=8.0.0
 shapely>=2.0.0
-
 tqdm
+jupyter
+scikit-learn
