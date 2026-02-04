@@ -118,11 +118,7 @@ MedAI_Dermatology/
 ```
 
 ---
-
-## 🎯 Thông Tin Dataset: ISIC 2019
-
-* **Nguồn:** ISIC 2019 Challenge (HAM10000, BCN_20000, MSK).
-* **Link tải:** https://drive.google.com/file/d/1EF-yuhAYhI7nmvR9vdlLZz9t81vSd_VK/view?usp=drive_link
+Link tải processed_isic_2019.zip: https://drive.google.com/file/d/1EF-yuhAYhI7nmvR9vdlLZz9t81vSd_VK/view?usp=drive_link
 
 ### 🏥 8 Loại Bệnh Da (Classes)
 
