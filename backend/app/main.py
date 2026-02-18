@@ -29,7 +29,8 @@ from .utils.constants import (
     DISEASE_NAMES_EN,
     RISK_LEVELS,
     RISK_LEVEL_VI,
-    RECOMMENDATIONS
+    RECOMMENDATIONS,
+    MEDICAL_LOGO
 )
 
 # Configure logging
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="API chẩn đoán bệnh da bằng AI sử dụng EfficientNet-B3",
+    description="API chẩn đoán bệnh da bằng AI sử dụng EfficientNet-B4",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -147,11 +148,14 @@ async def predict(file: UploadFile = File(..., description="Ảnh da cần chẩ
         disease_name_en = DISEASE_NAMES_EN.get(predicted_class, "Unknown")
         risk_level = RISK_LEVELS.get(predicted_class, "medium")
         risk_level_vi = RISK_LEVEL_VI.get(risk_level, "Trung bình")
-        recommendations = RECOMMENDATIONS.get(predicted_class, {
-            "description": "Vui lòng tư vấn bác sĩ da liễu",
-            "actions": ["Khám bác sĩ chuyên khoa"],
-            "urgency": "Nên khám"
-        })
+        rec_text = RECOMMENDATIONS.get(predicted_class, "Vui lòng tư vấn bác sĩ chuyên khoa da liễu.")
+        
+        # Construct structured recommendation object for frontend compatibility
+        recommendations = {
+            "description": rec_text,
+            "actions": [act.strip() for act in rec_text.split('.') if act.strip()],
+            "urgency": "Cần khám ngay" if risk_level in ["high", "very_high", "critical"] else "Theo dõi thêm"
+        }
         
         # Create response
         response = PredictionResponse(

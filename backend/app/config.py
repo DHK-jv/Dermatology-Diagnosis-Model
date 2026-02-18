@@ -15,8 +15,9 @@ class Settings:
     # Paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     PROJECT_ROOT: Path = BASE_DIR.parent
-    #MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b3_derma_finetuned.keras"
-    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b3_derma_v1.0_kaggle32e.keras"
+    #MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_finetuned.keras"
+    #MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_best.pth"  # V1 model
+    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_v2.pth"  # V2 model (73.9% val acc)
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     
     # API Settings
@@ -43,7 +44,7 @@ class Settings:
     # Image Settings
     MAX_IMAGE_SIZE_MB: int = 10
     ALLOWED_EXTENSIONS: set = {"jpg", "jpeg", "png", "heic"}
-    IMAGE_SIZE: tuple = (300, 300)  # Model input size
+    IMAGE_SIZE: tuple = (380, 380)  # Model input size
     
     # Model Settings
     CONFIDENCE_THRESHOLD: float = 0.5

@@ -42,17 +42,17 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
 
 
 
-# Initialize pipeline once to avoid reloading YOLO model repeatedly
+# Initialize pipeline once to reuse the preprocessing pipeline
 try:
     # Append project root to path so we can import src
     import sys
     sys.path.append(str(settings.PROJECT_ROOT))
-    from src.preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+    from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
     
     pipeline = HybridPreprocessingPipeline(
-        mode='auto', 
+        mode='auto',
         target_size=settings.IMAGE_SIZE,
-        device='cpu' # Use CPU for backend to save resources
+        device='cpu'  # Use CPU for backend to save resources
     )
     PIPELINE_AVAILABLE = True
 except Exception as e:
@@ -70,7 +70,7 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
         
     Returns:
         If return_steps=False:
-            Preprocessed image array ready for model (shape: (1, 300, 300, 3))
+            Preprocessed image array ready for model (shape: (1, 380, 380, 3))
         If return_steps=True:
             Tuple (img_array, steps_dict)
     """
@@ -86,7 +86,7 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     
     if PIPELINE_AVAILABLE:
         try:
-            # Use the hybrid pipeline (YOLO/OpenCV)
+            # Use the preprocessing pipeline (YOLO auto mask, no manual mask)
             if return_steps:
                 result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
                 
@@ -117,7 +117,7 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
             # Use the opencv_pipeline instance inside the hybrid pipeline if available
             try:
                 if return_steps:
-                    result, steps = pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=True)
+                    result, steps = pipeline.opencv_pipeline.process(img_np, return_steps=True)
                     
                     # Add batch dimension
                     result_batch = np.expand_dims(result, axis=0)
@@ -136,7 +136,7 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
                          
                     return result_batch * 255.0, normalized_steps
                 else:
-                    result = pipeline.opencv_pipeline.process(img_np, mask=None)
+                    result = pipeline.opencv_pipeline.process(img_np)
                     return np.expand_dims(result, axis=0) * 255.0
             except Exception as e2:
                 print(f"OpenCV fallback failed: {e2}. Using basic resize.")

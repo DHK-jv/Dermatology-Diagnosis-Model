@@ -1,13 +1,11 @@
 """
-AI Model inference service
+AI Model inference service (PyTorch Version)
 Handles model loading and prediction
 """
 import os
-# Force CPU-only mode to avoid GPU/CUDA compatibility issues
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TensorFlow logging
-
-import tensorflow as tf
+import torch
+import torch.nn.functional as F
+from torchvision import transforms, models
 import numpy as np
 from typing import Dict, Tuple
 import logging
@@ -19,10 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class ModelInference:
-    """Singleton class for model inference"""
+    """Singleton class for model inference (PyTorch)"""
     
     _instance = None
     _model = None
+    _device = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -32,57 +31,107 @@ class ModelInference:
     def __init__(self):
         """Initialize and load model"""
         if self._model is None:
+            self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.load_model()
     
     def load_model(self):
-        """Load the trained EfficientNet model"""
+        """Load the trained EfficientNet model (.pth)"""
         try:
-            logger.info(f"Loading model from {settings.MODEL_PATH}")
+            logger.info(f"Loading PyTorch model from {settings.MODEL_PATH}")
+            logger.info(f"Device: {self._device}")
             
-            # Disable GPU if not needed (for faster CPU inference on small batches)
-            # Uncomment if you want CPU-only
-            # tf.config.set_visible_devices([], 'GPU')
+            # Create model architecture using torchvision
+            # The checkpoint was trained with torchvision.models.efficientnet_b4
+            self._model = models.efficientnet_b4(weights=None)
             
-            self._model = tf.keras.models.load_model(
-                str(settings.MODEL_PATH),
-                compile=False  # We don't need training
+            # Modify classifier head to match our 24 classes
+            num_ftrs = self._model.classifier[1].in_features
+            self._model.classifier[1] = torch.nn.Linear(num_ftrs, len(CLASS_NAMES))
+            
+            # Load checkpoint (nested structure)
+            # weights_only=False needed for PyTorch 2.6+ with numpy objects
+            checkpoint = torch.load(
+                str(settings.MODEL_PATH), 
+                map_location=self._device,
+                weights_only=False
             )
             
-            logger.info(f"Model loaded successfully. Input shape: {self._model.input_shape}")
-            logger.info(f"Model output shape: {self._model.output_shape}")
+            # Extract model state from checkpoint
+            if isinstance(checkpoint, dict) and 'model_state' in checkpoint:
+                state_dict = checkpoint['model_state']
+                val_acc = checkpoint.get('val_acc', None)
+                if val_acc is not None:
+                    logger.info(f"Loaded checkpoint with Val Acc: {val_acc:.4f}")
+            else:
+                # Fallback for direct state dict (backward compatibility)
+                state_dict = checkpoint
+                logger.info("Loaded direct state dict (no metadata)")
+            
+            # Load state dict
+            self._model.load_state_dict(state_dict)
+            
+            # Set to eval mode!
+            self._model.to(self._device)
+            self._model.eval()
+            
+            logger.info(f"PyTorch Model loaded successfully.")
             
         except Exception as e:
-            logger.error(f"Failed to load model: {str(e)}")
-            raise RuntimeError(f"Không thể load model AI: {str(e)}")
+            logger.error(f"Failed to load PyTorch model: {str(e)}")
+            # Don't raise error here, let it fail on predict or status check 
+            # so the app can still start (just unhealthy)
     
     def predict(self, image_array: np.ndarray) -> Tuple[str, float, Dict[str, float]]:
         """
         Run prediction on preprocessed image
         
         Args:
-            image_array: Preprocessed image array (1, 300, 300, 3)
+            image_array: Preprocessed image array (1, 380, 380, 3) - Values 0-255 float/uint8
             
         Returns:
             Tuple of (predicted_class, confidence, all_predictions_dict)
         """
         if self._model is None:
-            raise RuntimeError("Model chưa được load")
+            self.load_model()
+            if self._model is None:
+                raise RuntimeError("Model chưa được load")
         
         try:
-            # Run inference
-            predictions = self._model.predict(image_array, verbose=0)
+            # 1. Prepare Input Tensor
+            # Remove batch dim: (1, 380, 380, 3) -> (380, 380, 3)
+            img = image_array[0]
             
-            # Get probabilities for all classes
-            probabilities = predictions[0]  # Remove batch dimension
+            # Convert to Tensor (C, H, W) and scale 0-1
+            # Current img is float (0-255), so we divide by 255.0
+            img_tensor = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
+            
+            # Normalize (ImageNet stats)
+            normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            )
+            img_tensor = normalize(img_tensor)
+            
+            # Add batch dimension: (1, C, H, W)
+            input_tensor = img_tensor.unsqueeze(0).to(self._device)
+            
+            # 2. Inference
+            with torch.no_grad():
+                outputs = self._model(input_tensor)
+                probabilities = F.softmax(outputs, dim=1)[0]
+            
+            # 3. Process Results
+            # Move to CPU numpy
+            probs_np = probabilities.cpu().numpy()
             
             # Get predicted class
-            predicted_idx = np.argmax(probabilities)
+            predicted_idx = np.argmax(probs_np)
             predicted_class = CLASS_NAMES[predicted_idx]
-            confidence = float(probabilities[predicted_idx])
+            confidence = float(probs_np[predicted_idx])
             
             # Create dict of all predictions (sorted by confidence)
             all_predictions = {
-                CLASS_NAMES[i]: float(probabilities[i])
+                CLASS_NAMES[i]: float(probs_np[i])
                 for i in range(len(CLASS_NAMES))
             }
             all_predictions = dict(

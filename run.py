@@ -73,18 +73,14 @@ def check_and_install_requirements():
         log("Không tìm thấy file requirements.txt (cả root và backend).", "error")
         return
 
-    log("Đang kiểm tra và cập nhật thư viện (trong .venv)...")
+    log("Đang kiểm tra và cài đặt thư viện (trong .venv)...")
     try:
-        # Update pip trước
-        subprocess.check_call([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"], 
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # Cài đặt requirements
-        # Cho hiện output để user biết tiến trình (vì tensorflow cài lâu)
+        # Cài đặt requirements (bỏ qua bước upgrade pip để tránh treo)
+        # Cho hiện output để user biết tiến trình
         subprocess.check_call([str(venv_python), "-m", "pip", "install", "-r", str(target_req)])
         log("Cài đặt thư viện hoàn tất.", "success")
-    except subprocess.CalledProcessError:
-        log("Lỗi khi cài đặt thư viện.", "error")
+    except subprocess.CalledProcessError as e:
+        log(f"Lỗi khi cài đặt thư viện: {e}", "error")
         sys.exit(1)
 
 def run_system():

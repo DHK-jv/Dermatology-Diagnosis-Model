@@ -13,12 +13,19 @@ class PredictionResponse(BaseModel):
     disease_name_vi: str = Field(..., description="Disease name in Vietnamese")
     disease_name_en: str = Field(..., description="Disease name in English")
     confidence: float = Field(..., ge=0, le=1, description="Confidence score (0-1)")
-    confidence_percent: str = Field(..., description="Confidence as percentage string")
+    confidence_percent: Optional[str] = Field(None, description="Confidence as percentage string")
     risk_level: str = Field(..., description="Risk level: low/medium/high/very_high")
     risk_level_vi: str = Field(..., description="Risk level in Vietnamese")
     all_predictions: Dict[str, float] = Field(..., description="All class probabilities")
     recommendations: Dict = Field(..., description="Medical recommendations")
     timestamp: datetime = Field(default_factory=datetime.now, description="Prediction timestamp")
+    
+    def __init__(self, **data):
+        """Initialize and auto-calculate confidence_percent if missing"""
+        # Auto-calculate confidence_percent from confidence if not provided
+        if 'confidence_percent' not in data and 'confidence' in data:
+            data['confidence_percent'] = f"{data['confidence'] * 100:.1f}%"
+        super().__init__(**data)
     
     class Config:
         json_schema_extra = {

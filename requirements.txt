@@ -1,7 +1,9 @@
-tensorflow==2.16.2
+torch
+torchvision
+timm
 opencv-python
 numpy
-pandas
+polars
 matplotlib
 ultralytics>=8.0.0
 shapely>=2.0.0

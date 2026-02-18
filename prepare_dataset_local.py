@@ -1,0 +1,511 @@
+import os
+import shutil
+import cv2
+import polars as pl
+import numpy as np
+from pathlib import Path
+from tqdm import tqdm
+from PIL import Image
+import hashlib
+import sys
+from sklearn.model_selection import GroupShuffleSplit
+
+# Import Hybrid Pipeline
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+
+# --- CONFIG ---
+RAW_DATA_DIR = Path("data/raw")
+PROCESSED_DATA_DIR = Path("data/processed")
+IMG_SIZE = (380, 380)
+MIN_VAL_PER_CLASS = 50  # Minimum validation samples per class
+VAL_RATIO = 0.15  # Target validation ratio
+
+# --- CLASS MAPPING (24 Classes) ---
+CLASS_MAPPING_24 = {
+    'MEL': 'melanoma',
+    'NV': 'melanocytic_nevus',
+    'BCC': 'basal_cell_carcinoma',
+    'AK': 'actinic_keratosis',
+    'SCC': 'squamous_cell_carcinoma',
+    'BKL': 'seborrheic_keratosis',
+    'DF': 'dermatofibroma',
+    'VASC': 'vascular_lesion',
+    'NEV': 'melanocytic_nevus',
+    'ACK': 'actinic_keratosis',
+    'SEK': 'seborrheic_keratosis',
+}
+
+PAD_TO_CANONICAL = {
+    'MEL': 'melanoma',
+    'NEV': 'melanocytic_nevus',
+    'BCC': 'basal_cell_carcinoma',
+    'ACK': 'actinic_keratosis',
+    'SCC': 'squamous_cell_carcinoma',
+    'SEK': 'seborrheic_keratosis'
+}
+
+ISIC_TO_CANONICAL = {
+    'MEL': 'melanoma',
+    'NV': 'melanocytic_nevus',
+    'BCC': 'basal_cell_carcinoma',
+    'AK': 'actinic_keratosis',
+    'SCC': 'squamous_cell_carcinoma',
+    'BKL': 'seborrheic_keratosis',
+    'DF': 'dermatofibroma',
+    'VASC': 'vascular_lesion'
+}
+
+# FIXED: Class mapping to match 24-class list
+DERMNET_MAPPING = {
+    "acne": "acne_rosacea",
+    "rosacea": "acne_rosacea",
+    "bullous": "bullous_disease_pemphigus",
+    "pemphigus": "bullous_disease_pemphigus",
+    "cellulitis": "cellulitis_impetigo",
+    "impetigo": "cellulitis_impetigo",
+    "eczema": "eczema_atopic_dermatitis",
+    "atopic": "eczema_atopic_dermatitis",
+    "exanthems": "exanthems_drug_eruptions",
+    "drug": "exanthems_drug_eruptions",
+    "hair": "alopecia_hair_loss",
+    "alopecia": "alopecia_hair_loss",
+    "viral": "viral_infections",
+    "warts": "viral_infections",
+    "molluscum": "viral_infections",
+    "herpes": "viral_infections",
+    "pigment": "pigmentation_disorders",
+    "lupus": "lupus_connective_tissue",
+    "connective": "lupus_connective_tissue",
+    "nail": "fungal_infections",  # FIXED: was nail_fungus_nail_disease
+    "fungus": "fungal_infections",
+    "tinea": "fungal_infections",
+    "psoriasis": "psoriasis_lichen_planus",
+    "lichen": "psoriasis_lichen_planus",
+    "scabies": "infestations_bites",
+    "systemic": "systemic_disease",
+    "urticaria": "urticaria_hives",
+    "hives": "urticaria_hives",
+    "vasculitis": "vasculitis",
+    "contact": "contact_dermatitis",
+    "poison": "contact_dermatitis",
+    # SKIPS
+    "melanoma": None, "nevi": None, "moles": None, "basal": None, "squamous": None, 
+    "actinic": None, "seborrheic": None, "vascular": None
+}
+
+# --- QUALITY CONTROL ---
+def validate_image_quality(img_path):
+    """Check image quality before processing"""
+    try:
+        # 1. Can open and verify
+        img = Image.open(img_path)
+        img.verify()
+        img = Image.open(img_path)  # Reopen after verify
+        
+        # 2. Size check
+        if min(img.size) < 100:
+            return False, "Too small"
+        
+        # 3. Aspect ratio
+        ratio = max(img.size) / min(img.size)
+        if ratio > 3:
+            return False, "Extreme aspect ratio"
+        
+        # 4. Brightness
+        arr = np.array(img)
+        if len(arr.shape) < 2:
+            return False, "Invalid image"
+        
+        mean_brightness = arr.mean()
+        if mean_brightness < 20 or mean_brightness > 235:
+            return False, "Too dark/bright"
+        
+        # 5. Color channels
+        if len(arr.shape) != 3 or arr.shape[2] != 3:
+            return False, "Not RGB"
+        
+        # 6. File size
+        if img_path.stat().st_size < 5000:
+            return False, "File too small (corrupted?)"
+        
+        return True, "OK"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
+
+def get_file_hash(filepath):
+    """Calculate MD5 hash of file to detect duplicates"""
+    hash_md5 = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+def resolve_dermnet_label(folder_name):
+    name_check = folder_name.lower()
+    
+    # 1. Check skips
+    for k, v in DERMNET_MAPPING.items():
+        if v is None and k in name_check:
+            return None
+            
+    # 2. Check mappings
+    keys = sorted([k for k, v in DERMNET_MAPPING.items() if v is not None], key=len, reverse=True)
+    for k in keys:
+        if k in name_check:
+            return DERMNET_MAPPING[k]
+            
+    return None
+
+# --- PATIENT METADATA LOADING ---
+def load_patient_metadata():
+    """Load patient_id mappings from ISIC and PAD metadata"""
+    patient_map = {}  # image_name -> patient_id
+    
+    print("📋 Loading patient metadata...")
+    
+    # ISIC 2019 - Check for metadata file
+    isic_meta = RAW_DATA_DIR / "isic_2019" / "ISIC_2019_Training_Metadata.csv"
+    if isic_meta.exists():
+        print(f"  Found ISIC metadata: {isic_meta}")
+        df_meta = pl.read_csv(isic_meta)
+        for row in df_meta.iter_rows(named=True):
+            img_name = row.get('image')
+            # Try different column names
+            patient_id = (row.get('patient_id') or 
+                         row.get('lesion_id') or 
+                         row.get('patient') or
+                         row.get('lesion'))
+            if img_name and patient_id:
+                patient_map[img_name] = str(patient_id)
+                patient_map[f"{img_name}.jpg"] = str(patient_id)
+        print(f"    Loaded {len(patient_map)} ISIC patient mappings")
+    else:
+        print(f"  ISIC metadata not found at {isic_meta}")
+    
+    # PAD-UFES-20
+    pad_csv = RAW_DATA_DIR / "pad_ufes_20" / "metadata.csv"
+    if pad_csv.exists():
+        print(f"  Found PAD metadata: {pad_csv}")
+        df_pad = pl.read_csv(pad_csv, infer_schema_length=50000)
+        pad_count = 0
+        for row in df_pad.iter_rows(named=True):
+            img_id = row.get('img_id')
+            patient_id = row.get('patient_id')
+            if img_id and patient_id:
+                patient_map[img_id] = str(patient_id)
+                patient_map[f"{img_id}.png"] = str(patient_id)
+                pad_count += 1
+        print(f"    Loaded {pad_count} PAD patient mappings")
+    else:
+        print(f"  PAD metadata not found at {pad_csv}")
+    
+    print(f"✅ Total patient mappings: {len(patient_map)}")
+    return patient_map
+
+# --- COLLECT IMAGES BY CLASS ---
+def collect_images_by_class():
+    """Collect all images grouped by class with patient info"""
+    patient_map = load_patient_metadata()
+    
+    class_data = {}  # class_name -> [(img_path, patient_id, hash), ...]
+    seen_hashes = set()
+    quality_failed = 0
+    duplicates = 0
+    
+    print("\n🔍 Scanning raw images...")
+    file_map = {}
+    all_files = []
+    
+    for f in RAW_DATA_DIR.rglob("*"):
+        if f.suffix.lower() in ['.jpg', '.jpeg', '.png']:
+            all_files.append(f)
+            file_map[f.name] = f
+    
+    print(f"  Found {len(all_files)} total image files")
+    
+    # --- ISIC 2019 ---
+    print("\n🔄 Processing ISIC 2019...")
+    isic_csv = RAW_DATA_DIR / "isic_2019" / "ISIC_2019_Training_GroundTruth.csv"
+    if isic_csv.exists():
+        df = pl.read_csv(isic_csv)
+        df = df.sample(fraction=1.0, shuffle=True, seed=42)
+        
+        for row in tqdm(df.iter_rows(named=True), total=len(df), desc="ISIC"):
+            img_name = row['image'] + ".jpg"
+            if img_name not in file_map:
+                continue
+            
+            src_path = file_map[img_name]
+            
+            # Quality check
+            is_valid, reason = validate_image_quality(src_path)
+            if not is_valid:
+                quality_failed += 1
+                continue
+            
+            # Deduplication
+            file_hash = get_file_hash(src_path)
+            if file_hash in seen_hashes:
+                duplicates += 1
+                continue
+            seen_hashes.add(file_hash)
+            
+            # Get label
+            label = None
+            for col, target in ISIC_TO_CANONICAL.items():
+                if row.get(col) == 1.0:
+                    label = target
+                    break
+            if not label:
+                continue
+            
+            # Get patient_id
+            patient_id = patient_map.get(row['image']) or patient_map.get(img_name)
+            
+            class_data.setdefault(label, []).append((src_path, patient_id, file_hash))
+    
+    # --- PAD-UFES-20 ---
+    print("\n🔄 Processing PAD-UFES-20...")
+    pad_csv = RAW_DATA_DIR / "pad_ufes_20" / "metadata.csv"
+    if pad_csv.exists():
+        df_pad = pl.read_csv(pad_csv, infer_schema_length=50000)
+        for row in tqdm(df_pad.iter_rows(named=True), total=len(df_pad), desc="PAD"):
+            img_id = row['img_id']
+            
+            if img_id in file_map:
+                src_path = file_map[img_id]
+            elif f"{img_id}.png" in file_map:
+                src_path = file_map[f"{img_id}.png"]
+            else:
+                continue
+            
+            # Quality check
+            is_valid, reason = validate_image_quality(src_path)
+            if not is_valid:
+                quality_failed += 1
+                continue
+            
+            # Deduplication
+            file_hash = get_file_hash(src_path)
+            if file_hash in seen_hashes:
+                duplicates += 1
+                continue
+            seen_hashes.add(file_hash)
+            
+            diag = row['diagnostic']
+            if diag in PAD_TO_CANONICAL:
+                label = PAD_TO_CANONICAL[diag]
+                patient_id = patient_map.get(img_id) or patient_map.get(f"{img_id}.png")
+                class_data.setdefault(label, []).append((src_path, patient_id, file_hash))
+    
+    # --- DermNet ---
+    print("\n🔄 Processing DermNet & Others...")
+    dermnet_root = RAW_DATA_DIR / "dermnet"
+    if dermnet_root.exists():
+        for f in tqdm(list(dermnet_root.rglob("*")), desc="DermNet"):
+            if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png']:
+                # Quality check
+                is_valid, reason = validate_image_quality(f)
+                if not is_valid:
+                    quality_failed += 1
+                    continue
+                
+                # Deduplication
+                file_hash = get_file_hash(f)
+                if file_hash in seen_hashes:
+                    duplicates += 1
+                    continue
+                seen_hashes.add(file_hash)
+                
+                parent_name = f.parent.name
+                label = resolve_dermnet_label(parent_name)
+                
+                if label:
+                    # DermNet has no patient_id
+                    class_data.setdefault(label, []).append((f, None, file_hash))
+    
+    print(f"\n📊 Collection complete:")
+    print(f"  Quality failed: {quality_failed}")
+    print(f"  Duplicates removed: {duplicates}")
+    print(f"  Classes found: {len(class_data)}")
+    
+    return class_data
+
+# --- PATIENT-BASED SPLIT ---
+def create_stratified_patient_split(class_data):
+    """Split by patient, ensuring min validation samples per class"""
+    print(f"\n🔀 Creating patient-based split (min {MIN_VAL_PER_CLASS} val/class)...")
+    
+    train_samples = []
+    val_samples = []
+    
+    for class_name, samples in class_data.items():
+        print(f"\n  {class_name}: {len(samples)} images")
+        
+        # Group by patient
+        patient_groups = {}
+        no_patient = []
+        
+        for img_path, patient_id, file_hash in samples:
+            if patient_id:
+                patient_groups.setdefault(patient_id, []).append((img_path, file_hash))
+            else:
+                no_patient.append((img_path, file_hash))
+        
+        print(f"    With patient_id: {sum(len(v) for v in patient_groups.values())} images ({len(patient_groups)} patients)")
+        print(f"    Without patient_id: {len(no_patient)} images")
+        
+        # Split patients (not images)
+        if len(patient_groups) > 0:
+            patients = list(patient_groups.keys())
+            patient_samples = [patient_groups[p] for p in patients]
+            
+            # Calculate val_ratio to ensure MIN_VAL_PER_CLASS
+            total_with_patient = sum(len(s) for s in patient_samples)
+            adjusted_ratio = max(VAL_RATIO, MIN_VAL_PER_CLASS / total_with_patient)
+            adjusted_ratio = min(adjusted_ratio, 0.3)  # Cap at 30%
+            
+            # Group shuffle split
+            gss = GroupShuffleSplit(n_splits=1, test_size=adjusted_ratio, random_state=42)
+            
+            X = np.arange(len(patient_samples))
+            y = [0] * len(patient_samples)
+            groups = patients
+            
+            train_idx, val_idx = next(gss.split(X, y, groups))
+            
+            for idx in train_idx:
+                for img_path, file_hash in patient_samples[idx]:
+                    train_samples.append((img_path, class_name, file_hash))
+            
+            for idx in val_idx:
+                for img_path, file_hash in patient_samples[idx]:
+                    val_samples.append((img_path, class_name, file_hash))
+        
+        # Handle images without patient_id (DermNet)
+        if no_patient:
+            current_val_count = len([s for s in val_samples if s[1] == class_name])
+            needed = max(0, MIN_VAL_PER_CLASS - current_val_count)
+            n_val = max(needed, int(len(no_patient) * VAL_RATIO))
+            n_val = min(n_val, len(no_patient))
+            
+            np.random.seed(42)
+            np.random.shuffle(no_patient)
+            
+            for img_path, file_hash in no_patient[:n_val]:
+                val_samples.append((img_path, class_name, file_hash))
+            for img_path, file_hash in no_patient[n_val:]:
+                train_samples.append((img_path, class_name, file_hash))
+        
+        final_val_count = len([s for s in val_samples if s[1] == class_name])
+        final_train_count = len([s for s in train_samples if s[1] == class_name])
+        print(f"    → Train: {final_train_count}, Val: {final_val_count}")
+    
+    print(f"\n✅ Split complete:")
+    print(f"  Total train: {len(train_samples)}")
+    print(f"  Total val: {len(val_samples)}")
+    
+    return train_samples, val_samples
+
+# --- PROCESS AND SAVE ---
+def process_and_save_samples(samples, pipeline):
+    """Process and save images to train/val folders"""
+    print(f"\n🔄 Processing {len(samples)} images...")
+    
+    processed = 0
+    failed = 0
+    
+    for img_path, label, file_hash in tqdm(samples, desc="Processing"):
+        try:
+            # Determine split from samples list
+            split = 'train' if any(s[0] == img_path and s[1] == label for s in train_samples) else 'val'
+            
+            # Read
+            img = cv2.imread(str(img_path))
+            if img is None:
+                failed += 1
+                continue
+            
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
+            # Process
+            processed_img = pipeline.process(img, verbose=False)
+            
+            # Convert to uint8
+            if processed_img.max() <= 1.05:
+                processed_img = (processed_img * 255).astype(np.uint8)
+            else:
+                processed_img = processed_img.astype(np.uint8)
+            
+            # Save
+            out_name = f"{label}_{img_path.stem}.jpg"
+            target_path = PROCESSED_DATA_DIR / split / label / out_name
+            os.makedirs(target_path.parent, exist_ok=True)
+            
+            Image.fromarray(processed_img).save(target_path, quality=95)
+            processed += 1
+            
+        except Exception as e:
+            failed += 1
+    
+    print(f"✅ Processed: {processed}, Failed: {failed}")
+
+def print_stats():
+    """Print final dataset statistics"""
+    print("\n" + "="*60)
+    print("📊 FINAL DATASET STATISTICS")
+    print("="*60)
+    
+    for split in ['train', 'val']:
+        split_dir = PROCESSED_DATA_DIR / split
+        if not split_dir.exists():
+            continue
+        
+        print(f"\n{split.upper()}:")
+        total = 0
+        for class_dir in sorted(split_dir.iterdir()):
+            if class_dir.is_dir():
+                count = len(list(class_dir.glob("*")))
+                print(f"  {class_dir.name:30s}: {count:5d} images")
+                total += count
+        print(f"  {'TOTAL':30s}: {total:5d} images")
+    
+    print("\n" + "="*60)
+
+# --- MAIN ---
+def main():
+    print("🚀 Dataset Regeneration with Quality Fixes")
+    print("="*60)
+    
+    # Wipe and recreate
+    if PROCESSED_DATA_DIR.exists():
+        print(f"🗑️  Wiping {PROCESSED_DATA_DIR}...")
+        shutil.rmtree(PROCESSED_DATA_DIR)
+    os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+    
+    # Initialize pipeline
+    pipeline = HybridPreprocessingPipeline(
+        mode='auto',
+        target_size=IMG_SIZE,
+        yolo_model_path="backend/ml_models/yolov8n-seg.pt"
+    )
+    
+    # Collect images
+    class_data = collect_images_by_class()
+    
+    # Create patient-based split
+    global train_samples, val_samples
+    train_samples, val_samples = create_stratified_patient_split(class_data)
+    
+    # Process and save
+    all_samples = train_samples + val_samples
+    process_and_save_samples(all_samples, pipeline)
+    
+    # Print stats
+    print_stats()
+    
+    print("\n✅ Dataset regeneration complete!")
+
+if __name__ == "__main__":
+    main()

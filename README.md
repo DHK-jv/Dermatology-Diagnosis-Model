@@ -1,19 +1,20 @@
-# 🏥 MedAI Dermatology - Hệ Thống AI Chẩn Đoán Bệnh Da
+# 🏥 MedAI Dermatology - AI Skin Disease Diagnosis
 
 > **Author:** Dương Hoàng Khang - 223952 - DH22KPM01  
-> **Dự án:** Phân loại 8 loại bệnh da liễu bằng Deep Learning (EfficientNet-B3)
+> **Deep Learning-based Skin Disease Classification System**
 
 ---
 
-## 📊 Tổng Quan Dự Án
+## 📊 Overview
 
-Đây là dự án nghiên cứu và phát triển hệ thống AI hỗ trợ chẩn đoán bệnh da liễu dựa trên ảnh dermoscopy. Hệ thống tích hợp quy trình xử lý ảnh y tế chuyên sâu và mô hình Deep Learning tiên tiến.
+An AI-powered dermatology diagnosis system using advanced deep learning and medical image processing. The system integrates professional preprocessing pipelines and state-of-the-art neural networks to assist in skin disease diagnosis.
 
-**Kết quả đạt được:**
-- ✅ **Dataset:** Nâng cấp lên ISIC 2019 (25,331 ảnh).
-- ✅ **Preprocessing:** Tự động hóa (YOLOv8 Segmentation + Hair Removal).
-- ✅ **Model:** EfficientNet-B3 được tối ưu hóa trên Kaggle.
-- ✅ **System:** Full-stack System với Backend (FastAPI) và Frontend hoàn chỉnh.
+**Key Achievements:**
+- ✅ **Dataset:** ~41k images (DermNet NZ + ISIC 2019 + PAD-UFES-20)
+- ✅ **Preprocessing:** Automated pipeline (YOLOv8 Segmentation + Hair Removal + Quality Control)
+- ✅ **Model:** EfficientNet-B4 V2 (73.9% validation accuracy, F1 0.670)
+- ✅ **System:** Full-stack application with FastAPI backend and modern web frontend
+- ✅ **Classes:** 24 dermatological conditions with Vietnamese translations
 
 ---
 
@@ -22,152 +23,223 @@
 ```bash
 git clone https://github.com/DHK-jv/Dermatology-Diagnosis-Model.git
 cd Dermatology-Diagnosis-Model
-```
-Sau khi clone về, từ thư mục gốc của dự án, chạy lệnh:
-
-```bash
 python run.py
-# Hoặc: python3 run.py
-
 ```
 
-## 📁 Cấu Trúc Dự Án Chi Tiết
+System will auto-start at: http://localhost:8080
 
-```bash
+---
+
+## 🏥 Supported Diseases (24 Classes)
+
+| Vietnamese | English | Risk |
+|-----------|---------|------|
+| Mụn trứng cá & Rosacea | Acne Rosacea | Low |
+| Dày sừng quang hóa | Actinic Keratosis | Medium ⚠️ |
+| Rụng tóc | Alopecia Hair Loss | Low |
+| **Ung thư tế bào đáy** | **Basal Cell Carcinoma** | **High ⚠️** |
+| Bệnh bóng nước | Bullous Disease | Medium |
+| Viêm mô tế bào | Cellulitis Impetigo | Medium |
+| Viêm da tiếp xúc | Contact Dermatitis | Low |
+| U xơ da lành tính | Dermatofibroma | Low |
+| Chàm & Viêm da cơ địa | Eczema Atopic Dermatitis | Low |
+| Phát ban do thuốc | Drug Eruptions | Medium |
+| Nấm da | Fungal Infections | Low |
+| Côn trùng cắn | Infestations Bites | Low |
+| Lupus & Bệnh mô liên kết | Lupus | High ⚠️ |
+| Nốt ruồi lành tính | Melanocytic Nevus | Low |
+| **Ung thư hắc tố** | **Melanoma** | **Critical 🚨** |
+| Rối loạn sắc tố | Pigmentation Disorders | Low |
+| Vảy nến | Psoriasis Lichen Planus | Medium |
+| Dày sừng tiết bã | Seborrheic Keratosis | Low |
+| **Ung thư tế bào vảy** | **Squamous Cell Carcinoma** | **High ⚠️** |
+| Biểu hiện da bệnh nội khoa | Systemic Disease | High |
+| Mề đay | Urticaria Hives | Low |
+| Tổn thương mạch máu | Vascular Lesion | Medium |
+| Viêm mạch máu | Vasculitis | High |
+| Nhiễm trùng virus | Viral Infections | Low |
+
+---
+
+## 📁 Project Structure
+
+```
 MedAI_Dermatology/
 │
-├── 📂 backend/                    # 🖥️ BACKEND SYSTEM (FastAPI)
-│   ├── app/                       # Source code chính của backend
-│   │   ├── models/                # Pydantic schemas (Request/Response models)
-│   │   ├── services/              # Business Logic (Inference, Preprocessing, Storage)
-│   │   ├── utils/                 # Utility functions
-│   │   ├── config.py              # Cấu hình hệ thống (Settings)
-│   │   ├── database.py            # Quản lý kết nối MongoDB
-│   │   └── main.py                # Entry point, định nghĩa API Endpoints
+├── 📂 backend/                      # Backend System (FastAPI)
+│   ├── app/
+│   │   ├── models/                  # Pydantic schemas
+│   │   ├── services/                # Business logic
+│   │   │   ├── inference.py         # AI model inference
+│   │   │   ├── preprocessing.py     # Image preprocessing
+│   │   │   └── storage.py           # Data persistence
+│   │   ├── utils/
+│   │   │   └── constants.py         # Disease mappings & configs
+│   │   ├── config.py                # System configuration
+│   │   └── main.py                  # API endpoints
 │   │
-│   ├── ml_models/                 # 🧠 KHO CHỨA MODELS AI
-│   │   ├── efficientnet_b3_derma_v1.0_kaggle32e.keras  # Model phân loại chính
-│   │   └── yolov8n-seg.pt         # Model Segmentation (tách vùng da)
+│   ├── ml_models/                   # AI Models
+│   │   ├── efficientnet_b4_derma_v2.pth    # Main classifier (V2)
+│   │   └── yolov8n-seg.pt           # Segmentation model
 │   │
-│   ├── uploads/                   # Thư mục tạm lưu ảnh upload
-│   ├── history.json               # Local database (fallback)
-│   ├── requirements.txt           # Dependencies cho Backend
-│   ├── start_backend.sh           # Script khởi động Backend (Legacy)
-│   └── .env                       # Biến môi trường (DB URL, Secrets)
+│   └── uploads/                     # Temporary upload storage
 │
-├── 📂 frontend/                   # 🌐 GIAO DIỆN NGƯỜI DÙNG
-│   ├── assets/                    # Images, logos
-│   ├── css/                       # Stylesheets
-│   ├── js/                        # JavaScript logic (App, API, Diagnose)
-│   ├── pages/                     # HTML sub-pages (Diagnose, History, Result)
-│   ├── index.html                 # Trang chủ
-│   └── start_frontend.sh          # Script khởi động Frontend (Legacy)
+├── 📂 frontend/                     # Web Interface
+│   ├── assets/                      # Images, logos
+│   ├── css/                         # Stylesheets
+│   ├── js/                          # JavaScript
+│   │   ├── app.js                   # Main app logic
+│   │   ├── api.js                   # API client
+│   │   └── diagnose.js              # Diagnosis flow
+│   ├── pages/                       # HTML pages
+│   │   ├── diagnose.html            # Diagnosis page
+│   │   ├── history.html             # History page
+│   │   └── result.html              # Results page
+│   └── index.html                   # Landing page
 │
-├── 📂 src/                        # ⚙️ DEV & TRAINING CORE (Trái tim của dự án AI)
-│   │  *Vai trò: Chứa toàn bộ mã nguồn xử lý dữ liệu, định nghĩa model và training.*
-│   │
-│   ├── 📄 train.py                # 🚀 Script huấn luyện chính
-│   │   # - Đọc dữ liệu từ data/processed
-│   │   # - Xây dựng model từ src/models
-│   │   # - Chạy training loop và lưu model (.keras)
-│   │
-│   ├── 📂 preprocessing/          # 🛠️ Module Tiền xử lý ảnh (Preprocessing)
-│   │   # Biến ảnh thô thành ảnh sạch để AI học tốt hơn.
-│   │   ├── 📄 hybrid_pipeline.py  # Pipeline xử lý lai: Hair removal, Color balance...
-│   │   ├── 📄 yolo_segmentor.py   # Chạy model YOLOv8 để cắt vùng bệnh
-│   │   ├── 📄 process_dataset.py  # Script xử lý hàng loạt dataset thô sang sạch
-│   │   └── 📄 prepare_isic_data.py # Script chuyên biệt cho bộ dữ liệu ISIC 2019
-│   │
-│   ├── 📂 models/                 # 🧠 Kiến trúc Model (Model Architectures)
-│   │   # Nơi định nghĩa "hình dáng" của mạng nơ-ron.
-│   │   ├── 📄 efficientnet_clf.py # Kiến trúc EfficientNet-B3 (Phân loại bệnh)
-│   │   └── 📄 unet_segmentor.py   # Kiến trúc U-Net (Phân vùng ảnh - nếu tự train)
-│   │
-│   ├── 📂 data_management/        # 💾 Quản lý dữ liệu
-│   │   └── 📄 merge_and_reconstruct.py # Công cụ gộp/tái cấu trúc dataset
-│   │
-│   └── 📂 utils/                  # 🔧 Tiện ích chung
-│       └── 📄 tf_config.py        # Cấu hình TensorFlow (GPU memory growth, etc.)
+├── 📂 preprocessing/                # Image Preprocessing
+│   ├── hybrid_pipeline.py           # Main preprocessing pipeline
+│   └── yolo_segmentor.py            # YOLO segmentation wrapper
 │
-├── 📂 infrastructure/             # 🏗️ DEVOPS & DEPLOYMENT
-│   ├── docker/                    # Config files cho Docker
-│   └── nginx/                     # Config Nginx
-│       └── medai_nginx.conf       # Cấu hình Nginx
+├── 📂 research/                     # Research & Training
+│   ├── notebooks/
+│   │   ├── kaggle-train.ipynb       # Main training notebook
+│   │   ├── 01_eda_data.ipynb        # Data analysis
+│   │   └── 02_processed_data_check.ipynb
+│   └── reports/                     # Training reports
 │
-├── 📂 research/                   # 🔬 NGHIÊN CỨU & KẾT QUẢ
-│   ├── 📂 notebooks/              # Jupyter Notebooks
-│   │   ├── 01_eda_data.ipynb      # Phân tích dữ liệu
-│   │   ├── 02_processed_data_check.ipynb # Kiểm tra dữ liệu sau xử lý
-│   │   └── isic-2019-efficientnetb3-kaggle-train.ipynb # Notebook training chính
-│   └── 📂 reports/                # Báo cáo & Kết quả visualize
-│       ├── 📂 gradcam/            # Kết quả Grad-CAM (Heatmaps)
-│       └── preprocessing_pipeline.png # Sơ đồ luồng xử lý ảnh
+├── 📂 data/                         # Dataset
+│   ├── raw/                         # Raw images
+│   │   ├── dermnet/                 # DermNet NZ
+│   │   ├── isic_2019/               # ISIC 2019
+│   │   └── pad_ufes/                # PAD-UFES-20
+│   └── processed/                   # Processed dataset
+│       ├── train/                   # Training set (~33k images)
+│       └── val/                     # Validation set (~8k images)
 │
-├── 📂 data/                       # 💾 KHO DỮ LIỆU
-│   ├── raw/                       # Dữ liệu thô (Images, Metadata)
-│   ├── processed/                 # Dữ liệu đã xử lý (Train/Val/Test split)
-│   └── masks/                     # Dữ liệu phân vùng (Segmentation)
-│       └── lesion/                # Mask vùng bệnh (Ground Truth)
-│
-├── 📄 visualize_preprocessing.py   # Script demo xử lý ảnh
-├── 📄 processed_isic_2019.zip     # Packed dataset cho Kaggle
-├── 📄 README.md                   # Tài liệu hướng dẫn
-├── 📄 requirements.txt            # Dependencies cho Backend
-└── 📄 run.py                      # ⚡ Script chạy toàn bộ hệ thống (New)
-
+├── 📄 prepare_dataset_local.py      # Dataset preparation script
+├── 📄 run.py                        # System launcher
+├── 📄 requirements.txt              # Python dependencies
+└── 📄 README.md                     # This file
 ```
 
 ---
-Link tải processed_isic_2019.zip: https://drive.google.com/file/d/1EF-yuhAYhI7nmvR9vdlLZz9t81vSd_VK/view?usp=drive_link
 
-### 🏥 8 Loại Bệnh Da (Classes)
+## ⚙️ Preprocessing Pipeline
 
-| Mã | Tên Tiếng Việt | Tên Tiếng Anh | Mức độ nguy hiểm |
-| --- | --- | --- | --- |
-| `mel` | **Ung thư hắc tố** | Melanoma | 🔴 Rất cao |
-| `bcc` | Ung thư tế bào đáy | Basal Cell Carcinoma | ⚠️ Cao |
-| `scc` | Ung thư biểu mô TB vảy | Squamous Cell Carcinoma | ⚠️ Cao |
-| `akiec` | Dày sừng quang hóa | Actinic Keratoses | ⚠️ Cao |
-| `vasc` | Tổn thương mạch máu | Vascular Lesions | ⚠️ Trung bình |
-| `nv` | Nốt ruồi lành tính | Melanocytic Nevus | ✅ Thấp |
-| `bkl` | Sừng hóa lành tính | Benign Keratosis | ✅ Thấp |
-| `df` | U xơ sợi da | Dermatofibroma | ✅ Thấp |
+The system uses a sophisticated preprocessing pipeline:
 
-### 📉 Phân Chia Dữ Liệu
-
-Dữ liệu được chia theo tỷ lệ **80/10/10** (Stratified Split):
-
-Cấu trúc Dataset (25,331 ảnh)
-- Train (80%): 20264
-- Validation (10%): 2533
-- Test (10%): 2534
+```
+Raw Image (any size)
+    ↓
+1. YOLO Segmentation (YOLOv8n-seg)
+   - Detect and isolate skin lesion
+   - Remove background
+    ↓
+2. Hair Removal (DullRazor Algorithm)
+   - Remove hair artifacts
+   - Reduce noise
+    ↓
+3. Quality Control
+   - Check image quality
+   - Validate dimensions
+    ↓
+4. Resize & Normalize
+   - Resize to 380x380
+   - Normalize to [0-1]
+    ↓
+5. AI Inference (EfficientNet-B4)
+   - Extract features
+   - Classify into 24 classes
+    ↓
+Output: Disease prediction + confidence
+```
 
 ---
 
-## ⚙️ Pipeline 
+## 🔬 Training Details
 
-## Quy trình tiền xử lý ảnh
+### **Dataset Composition**
+
+| Source | Images | Classes | Usage |
+|--------|--------|---------|-------|
+| DermNet NZ | ~23k | 23 | Primary training |
+| ISIC 2019 | ~25k | 8 | Melanoma focus |
+| PAD-UFES-20 | ~2k | 6 | Patient metadata |
+| **Total** | **~41k** | **24 (merged)** | **Combined** |
+
+### **Data Split**
+
+- **Training**: 80% (~33k images)
+- **Validation**: 20% (~8k images)
+- **Split Method**: Patient-based (prevents data leakage)
+- **Minimum per class**: 50 validation samples
+
+### **Training Configuration**
+
+```python
+# Model
+Architecture: EfficientNet-B4 (PyTorch)
+Pretrained: ImageNet weights
+
+```
+
+### **Training Platform**
+
+- **Platform**: Kaggle Notebooks
+- **GPU**: NVIDIA P100 (16GB VRAM)
+- **Training Time**: ~10.4 hours
+- **Framework**: PyTorch 2.6+
+
+---
+
+## 🛠️ Development
+
+### Manual Setup
 
 ```bash
-python src/preprocessing/prepare_isic_data.py
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
 
+# Install dependencies
+pip install -r requirements.txt
 
-1. YOLO Segmentation: Dùng `yolov8n-seg` để phát hiện và tách nền, chỉ giữ lại vùng tổn thương.
-2. Hair Removal: Thuật toán DullRazor loại bỏ lông, tránh gây nhiễu cho model.
-3. Chuẩn hóa: Resize về `300x300` và chuẩn hóa pixel `[0-1]`.
-4. Inference: Model EfficientNet-B3 đưa ra xác suất cho 8 lớp bệnh.
+# Run backend
+cd backend
+uvicorn app.main:app --reload --port 8000
+
+# Run frontend (separate terminal)
+cd frontend
+python -m http.server 8080
+```
+
+### API Endpoints
+
+```
+GET  /                    - Health check
+POST /api/v1/diagnose     - Upload image for diagnosis
+GET  /api/v1/history      - Get diagnosis history
+```
 
 ---
 
-## 🔬 Training & Kết quả
+## ⚠️ Disclaimer
 
-* **Nền tảng:** Kaggle GPU (P100).
-* **Notebook:** `research/notebooks/kaggle-train-efficientnet.ipynb`
-* **Model:** EfficientNet-B3 (Pre-trained ImageNet).
-* **Kết quả:** Final TTA Accuracy: **83.58%**.
+**For research and educational purposes only.**  
+AI predictions are for **reference only** and **do not replace professional medical diagnosis**.  
+Always consult a qualified dermatologist.
 
-```
+---
 
-## ⚠️ Lưu Ý Quan Trọng
+## 📚 References
 
-Disclaimer: Hệ thống này được xây dựng nhằm mục đích nghiên cứu và hỗ trợ học tập. Kết quả dự đoán của AI chỉ mang tính chất tham khảo và không thay thế cho chẩn đoán của bác sĩ chuyên khoa.
+- **Datasets:** [DermNet NZ](https://dermnetnz.org/), [ISIC 2019](https://challenge.isic-archive.com/), [PAD-UFES-20](https://data.mendeley.com/datasets/zr7vgbcyr2/1)
+- **Models:** [EfficientNet](https://arxiv.org/abs/1905.11946), [YOLOv8](https://github.com/ultralytics/ultralytics)
+
+---
+
+**Last Updated:** February 2026  
+**Model Version:** V2 (73.9% val acc)  
+**Status:** ✅ Production Ready

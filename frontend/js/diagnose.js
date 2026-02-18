@@ -273,7 +273,7 @@ async function runPreprocessingAnimation(steps) {
     const sequence = [
         { key: 'original', label: 'Original Image', delay: 1000 },
         { key: 'cropped', label: '1. Segmentation (Cropping)', delay: 1000 },
-        { key: 'resized', label: '2. Resize (300x300)', delay: 1000 },
+        { key: 'resized', label: '2. Resize (380x380)', delay: 1000 },
         { key: 'hair_removed', label: '3. Hair Removal', delay: 1200 },
         { key: 'normalized', label: '4. Normalization (Final)', delay: 0 }
     ];

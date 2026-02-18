@@ -3,43 +3,19 @@
  * Display diagnosis results with details
  */
 
-// Disease name mapping: English -> Vietnamese
-const DISEASE_NAME_MAP = {
-    'melanoma': 'Ung thư hắc tố',
-    'mel': 'Ung thư hắc tố',
-    'nv': 'Nốt ruồi lành tính',
-    'nevus': 'Nốt ruồi lành tính',
-    'benign_nevus': 'Nốt ruồi lành tính',
-    'bcc': 'Ung thư tế bào đáy',
-    'basal_cell_carcinoma': 'Ung thư tế bào đáy',
-    'akiec': 'Sừng hóa quang tuyến',
-    'actinic_keratosis': 'Sừng hóa quang tuyến',
-    'bkl': 'Sừng hóa lành tính',
-    'benign_keratosis': 'Sừng hóa lành tính',
-    'df': 'U sợi da',
-    'dermatofibroma': 'U sợi da',
-    'vasc': 'Tổn thương mạch máu',
-    'vascular_lesion': 'Tổn thương mạch máu'
-};
-
-// Risk level mapping: English -> Vietnamese
-const RISK_LEVEL_MAP = {
-    'low': 'Thấp',
-    'medium': 'Trung bình',
-    'high': 'Cao',
-    'very_high': 'Rất cao'
-};
+// Import from medical-terms.js for centralized disease name translations
+import { DISEASE_NAMES, RISK_LEVELS, MEDICAL_LOGO } from '../js/medical-terms.js';
 
 /**
  * Translate disease name from English to Vietnamese
  * @param {string} englishName - English disease name
- * @returns {string} Vietnamese disease name
+ * @returns {string} Vietnamese disease name with English in parentheses
  */
 function translateDiseaseName(englishName) {
     if (!englishName) return '';
 
-    const normalized = englishName.toLowerCase().trim();
-    return DISEASE_NAME_MAP[normalized] || englishName;
+    const normalized = englishName.toLowerCase().trim().replace(/\s+/g, '_');
+    return DISEASE_NAMES[normalized] || englishName;
 }
 
 /**
@@ -51,7 +27,7 @@ function translateRiskLevel(riskLevel) {
     if (!riskLevel) return '';
 
     const normalized = riskLevel.toLowerCase().trim();
-    return RISK_LEVEL_MAP[normalized] || riskLevel;
+    return RISK_LEVELS[normalized] || riskLevel;
 }
 
 let currentDiagnosis = null;

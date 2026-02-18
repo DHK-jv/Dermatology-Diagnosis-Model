@@ -2,22 +2,44 @@
  * Medical Terminology Dictionary
  * Centralized Vietnamese translations for medical terms
  * Use these constants throughout the application for consistency
+ * 
+ * Updated: All 24 disease classes with Vietnamese (English) format
  */
 
-// Disease Names / Diagnosis
+// Medical Logo
+export const MEDICAL_LOGO = '🏥';
+
+// Disease Names / Diagnosis (All 24 classes)
 export const DISEASE_NAMES = {
-    'melanoma': 'Ung thư hắc tố',
-    'nevus': 'Nốt ruồi lành tính',
-    'basal_cell_carcinoma': 'Ung thư tế bào đáy',
-    'actinic_keratosis': 'Sừng hóa quang tuyến',
-    'benign_keratosis': 'Sừng hóa lành tính',
-    'dermatofibroma': 'U xơ da',
-    'vascular_lesion': 'Tổn thương mạch máu',
-    'squamous_cell_carcinoma': 'Ung thư tế bào vảy',
+    'acne_rosacea': 'Mụn trứng cá & Rosacea (Acne Rosacea)',
+    'actinic_keratosis': 'Dày sừng quang hóa - Tiền ung thư (Actinic Keratosis)',
+    'alopecia_hair_loss': 'Rụng tóc & Bệnh về tóc (Alopecia Hair Loss)',
+    'basal_cell_carcinoma': 'Ung thư tế bào đáy (Basal Cell Carcinoma)',
+    'bullous_disease_pemphigus': 'Bệnh bóng nước (Bullous Disease Pemphigus)',
+    'cellulitis_impetigo': 'Viêm mô tế bào & Chốc lở (Cellulitis Impetigo)',
+    'contact_dermatitis': 'Viêm da tiếp xúc - Dị ứng (Contact Dermatitis)',
+    'dermatofibroma': 'U xơ da lành tính (Dermatofibroma)',
+    'eczema_atopic_dermatitis': 'Chàm & Viêm da cơ địa (Eczema Atopic Dermatitis)',
+    'exanthems_drug_eruptions': 'Phát ban do thuốc (Exanthems Drug Eruptions)',
+    'fungal_infections': 'Nấm da - Hắc lào, Nấm móng (Fungal Infections)',
+    'infestations_bites': 'Ký sinh trùng & Côn trùng cắn (Infestations Bites)',
+    'lupus_connective_tissue': 'Lupus ban đỏ & Bệnh mô liên kết (Lupus Connective Tissue)',
+    'melanocytic_nevus': 'Nốt ruồi lành tính (Melanocytic Nevus)',
+    'melanoma': 'Ung thư hắc tố (Melanoma)',
+    'pigmentation_disorders': 'Rối loạn sắc tố (Pigmentation Disorders)',
+    'psoriasis_lichen_planus': 'Vảy nến & Lichen phẳng (Psoriasis Lichen Planus)',
+    'seborrheic_keratosis': 'Dày sừng tiết bã & U lành tính (Seborrheic Keratosis)',
+    'squamous_cell_carcinoma': 'Ung thư tế bào vảy (Squamous Cell Carcinoma)',
+    'systemic_disease': 'Biểu hiện da của bệnh nội khoa (Systemic Disease)',
+    'urticaria_hives': 'Mề đay (Urticaria Hives)',
+    'vascular_lesion': 'Tổn thương mạch máu & U mạch (Vascular Lesion)',
+    'vasculitis': 'Viêm mạch máu (Vasculitis)',
+    'viral_infections': 'Nhiễm trùng virus - Mụn cóc (Viral Infections)'
 };
 
 // Risk Levels
 export const RISK_LEVELS = {
+    'critical': 'Nguy hiểm',
     'very_high': 'Rất cao',
     'high': 'Cao',
     'medium': 'Trung bình',
@@ -65,6 +87,10 @@ export const UI_LABELS = {
 
 // Recommendations by Risk Level
 export const RECOMMENDATIONS = {
+    'critical': {
+        title: 'Cần khẩn cấp',
+        description: 'Vui lòng liên hệ bác sĩ da liễu ngay lập tức để được tư vấn và có thể cần sinh thiết.',
+    },
     'very_high': {
         title: 'Cần khẩn cấp',
         description: 'Vui lòng liên hệ bác sĩ da liễu ngay lập tức để được tư vấn và có thể cần sinh thiết.',
@@ -107,7 +133,7 @@ export const SUCCESS_MESSAGES = {
 /**
  * Translate disease name to Vietnamese
  * @param {string} diseaseCode - Disease code from API
- * @returns {string} Vietnamese disease name
+ * @returns {string} Vietnamese disease name with English in parentheses
  */
 export function translateDiseaseName(diseaseCode) {
     const code = diseaseCode.toLowerCase().replace(/\s+/g, '_');
