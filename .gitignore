@@ -75,3 +75,16 @@ backend/history.json
 # TRAINING RESULTS
 # ============================================
 kaggle-train-24class-results/
+
+# ============================================
+# MODEL WEIGHTS (too large for GitHub)
+# Download: see README for Google Drive link
+# ============================================
+*.keras
+*.h5
+*.hdf5
+*.pth
+*.pt
+*.ckpt
+*.onnx
+backend/ml_models/
