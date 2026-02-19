@@ -1,5 +1,6 @@
 # ============================================================
 # Backend Dockerfile - FastAPI + PyTorch + EfficientNet-B4
+# Build context: ./backend  (docker-compose sets this)
 # ============================================================
 FROM python:3.11-slim
 
@@ -47,5 +48,5 @@ EXPOSE 8000
 
 # ── Start server ──────────────────────────────────────────────
 CMD ["python", "-m", "uvicorn", "app.main:app", \
-     "--host", "0.0.0.0", "--port", "8000", \
-     "--workers", "1", "--log-level", "info"]
+    "--host", "0.0.0.0", "--port", "8000", \
+    "--workers", "1", "--log-level", "info"]

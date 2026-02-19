@@ -15,37 +15,33 @@ services:
   # ── Backend: FastAPI + PyTorch ──────────────────────────────
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./backend # Source code
+      dockerfile: ../infrastructure/docker/backend.Dockerfile # Dockerfile
     container_name: medai_backend
     restart: unless-stopped
 
-    # Environment
     environment:
       - PYTHONUNBUFFERED=1
       - USE_MONGODB=${USE_MONGODB:-false}
       - MONGODB_URL=${MONGODB_URL:-}
 
-    # Mount model weights and uploads (not baked into image)
     volumes:
       - ./backend/ml_models:/app/ml_models:ro # model weights (read-only)
       - uploads_data:/app/uploads # persistent uploads
 
-    # Only expose internally (frontend proxies to it)
     expose:
       - "8000"
 
-    # Health check
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s # Give time for model to load
+      start_period: 60s
 
     networks:
       - medai_network
-    # GPU support (uncomment if deploying on GPU server with nvidia-container-toolkit)
+    # GPU (uncomment nếu có nvidia-container-toolkit)
     # deploy:
     #   resources:
     #     reservations:
@@ -57,12 +53,16 @@ services:
     # ── Frontend: Nginx serving static files ───────────────────
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./frontend # Static files
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile # Dockerfile
     container_name: medai_frontend
     restart: unless-stopped
 
     # Map host port 80 to container port 80
+    # Mount nginx config từ infrastructure/nginx/
+    volumes:
+      - ./infrastructure/nginx/nginx_docker.conf:/etc/nginx/conf.d/default.conf:ro
+
     ports:
       - "${FRONTEND_PORT:-80}:80"
 
