@@ -30,6 +30,15 @@ System will auto-start at: http://localhost:8080
 
 ---
 
+## 🤖 Model Download
+
+Model weights are **not included** in the repository (too large). Download manually before running:
+
+1. **Download:** [efficientnet_b4_derma_v2.pth (68MB)](https://drive.google.com/file/d/12nvm8zcIKpKhjRn5T_7qM-GJZiuMiOW-/view?usp=drive_link)
+2. **Place at:** `backend/ml_models/efficientnet_b4_derma_v2.pth`
+
+---
+
 ## 🏥 Supported Diseases (24 Classes)
 
 | Vietnamese | English | Risk |
