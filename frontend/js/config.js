@@ -9,10 +9,22 @@ const API_CONFIG = {
     // - Local dev via run.py (port 3000): direct call to localhost:8000
     BASE_URL: (() => {
         const port = window.location.port;
-        if (port === '3000' || port === '8000') {
-            return 'http://localhost:8000';  // Local dev: gọi thẳng backend
+        const hostname = window.location.hostname;
+        console.log(`[Config] Detect Port: '${port}', Hostname: '${hostname}'`);
+
+        // Local Dev (run.py serves frontend on 3000)
+        if (port === '3000') {
+            return 'http://localhost:8000';
         }
-        return '';  // Docker/Nginx: dùng same-origin (nginx proxy /api/)
+
+        // Debug/Direct access (if opening on 8000? unlikely for frontend)
+        if (port === '8000') {
+            return 'http://localhost:8000';
+        }
+
+        // Docker/Production (Port 80/443) -> Use relative path
+        console.log('[Config] Using relative API path (Docker/Nginx)');
+        return '';
     })(),
 
     // API v1 prefix
