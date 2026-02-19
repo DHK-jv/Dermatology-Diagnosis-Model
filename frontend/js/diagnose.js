@@ -419,6 +419,15 @@ async function runDiagnosis() {
         // Store result for result page
         store('latestDiagnosis', result);
 
+        // Save original image for GradCAM (result page will use this)
+        if (previewImage) {
+            try {
+                sessionStorage.setItem('lastUploadedImage', previewImage);
+            } catch (e) {
+                console.warn('Could not save image to sessionStorage (too large?):', e);
+            }
+        }
+
         // Navigate to result page
         showSuccess('Phân tích hoàn tất!');
         setTimeout(() => {

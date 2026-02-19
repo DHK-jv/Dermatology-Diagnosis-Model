@@ -15,6 +15,7 @@ const API_CONFIG = {
         HEALTH: '/health',
         PREDICT: '/api/v1/predict',
         PREVIEW: '/api/v1/predict/preview',
+        GRADCAM: '/api/v1/gradcam',
         HISTORY: '/api/v1/history',
         DIAGNOSIS: (id) => `/api/v1/history/${id}`
     },

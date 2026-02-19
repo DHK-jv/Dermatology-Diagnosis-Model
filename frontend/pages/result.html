@@ -198,6 +198,63 @@
                 </div>
             </section>
 
+            <!-- GradCAM Explainability Section -->
+            <section class="mb-8" id="gradcam-section">
+                <h3 class="text-lg font-bold text-[#101418] dark:text-white mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">visibility</span>
+                    Giải Thích AI (GradCAM)
+                    <span class="text-xs font-normal text-[#5e758d] dark:text-gray-400 ml-2 bg-primary/10 px-2 py-0.5 rounded-full">xAI</span>
+                </h3>
+                <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] p-6 shadow-sm">
+                    <!-- Description -->
+                    <p class="text-sm text-[#5e758d] dark:text-gray-400 mb-4">
+                        Heatmap hiển thị <strong class="text-[#101418] dark:text-white">vùng da</strong> model AI tập trung phân tích khi đưa ra chẩn đoán.
+                        🔴 Đỏ = quan trọng nhất &nbsp;|&nbsp; 🟡 Vàng = vừa &nbsp;|&nbsp; 🔵 Xanh = ít ảnh hưởng.
+                    </p>
+
+                    <!-- GradCAM Image Area -->
+                    <div id="gradcam-container" class="relative">
+                        <!-- Loading State -->
+                        <div id="gradcam-loading"
+                            class="flex flex-col items-center justify-center h-48 bg-[#f8fafc] dark:bg-[#23303e] rounded-xl border-2 border-dashed border-[#dae0e7] dark:border-[#2e3e50]">
+                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
+                            <p class="text-sm text-[#5e758d] dark:text-gray-400">Đang tạo GradCAM heatmap...</p>
+                        </div>
+
+                        <!-- Heatmap Result -->
+                        <div id="gradcam-result" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Original Image -->
+                                <div>
+                                    <p class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">Ảnh Gốc</p>
+                                    <img id="gradcam-original"
+                                        class="w-full rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] object-cover"
+                                        src="" alt="Ảnh gốc" style="max-height:300px;object-fit:contain;" />
+                                </div>
+                                <!-- GradCAM Overlay -->
+                                <div>
+                                    <p class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">Heatmap Overlay</p>
+                                    <img id="gradcam-heatmap"
+                                        class="w-full rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] object-cover"
+                                        src="" alt="GradCAM Heatmap" style="max-height:300px;object-fit:contain;" />
+                                </div>
+                            </div>
+                            <p class="text-xs text-[#5e758d] dark:text-gray-500 mt-3 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">info</span>
+                                GradCAM được tính dựa trên gradient của class <strong id="gradcam-class-label" class="text-primary">-</strong>
+                                qua lớp conv cuối của EfficientNet-B4.
+                            </p>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="gradcam-error" class="hidden flex-col items-center justify-center h-32 text-center">
+                            <span class="material-symbols-outlined text-4xl text-[#dae0e7] dark:text-[#2e3e50] mb-2">broken_image</span>
+                            <p class="text-sm text-[#5e758d] dark:text-gray-400">Không thể tạo GradCAM. Thử lại sau.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Action Bar -->
             <div
                 class="flex flex-col-reverse md:flex-row gap-4 justify-between items-center bg-white dark:bg-[#1a2632] p-4 rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] shadow-sm sticky bottom-4 z-40">

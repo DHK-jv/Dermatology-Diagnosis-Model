@@ -80,6 +80,9 @@ async function loadDiagnosisResult() {
         currentDiagnosis = diagnosis;
         displayDiagnosisResult(diagnosis);
 
+        // Auto-load GradCAM heatmap
+        loadGradCAM(diagnosis);
+
     } catch (error) {
         console.error('Error loading diagnosis:', error);
         showError('Lỗi khi tải kết quả');
@@ -262,4 +265,88 @@ function setupResultActions() {
             showError('Chức năng tìm phòng khám đang được phát triển');
         });
     }
+}
+
+// ======== GradCAM ========
+
+/**
+ * Load and display GradCAM heatmap for the current diagnosis.
+ * Uses the original image file stored in sessionStorage by the diagnose page.
+ * @param {object} diagnosis - Diagnosis result object
+ */
+async function loadGradCAM(diagnosis) {
+    const loading = document.getElementById('gradcam-loading');
+    const result = document.getElementById('gradcam-result');
+    const errorEl = document.getElementById('gradcam-error');
+    const heatmapImg = document.getElementById('gradcam-heatmap');
+    const originalImg = document.getElementById('gradcam-original');
+    const classLabel = document.getElementById('gradcam-class-label');
+
+    if (!loading || !result || !errorEl) return;
+
+    // Show loading
+    loading.classList.remove('hidden');
+    result.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    try {
+        // Try to get the original uploaded image from sessionStorage
+        const imageDataUrl = sessionStorage.getItem('lastUploadedImage');
+        if (!imageDataUrl) {
+            throw new Error('Không tìm thấy ảnh gốc trong session');
+        }
+
+        // Convert base64 dataURL → Blob → File
+        const blob = dataURLtoBlob(imageDataUrl);
+        const file = new File([blob], 'image.jpg', { type: blob.type });
+
+        // Build FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        if (diagnosis.predicted_class) {
+            formData.append('target_class', diagnosis.predicted_class);
+        }
+
+        // Call GradCAM API
+        const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.GRADCAM;
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Display results
+        heatmapImg.src = data.heatmap_overlay;
+        originalImg.src = imageDataUrl;
+        if (classLabel) classLabel.textContent = data.predicted_class;
+
+        loading.classList.add('hidden');
+        result.classList.remove('hidden');
+
+    } catch (err) {
+        console.warn('GradCAM error:', err.message);
+        loading.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+        errorEl.classList.add('flex');
+    }
+}
+
+/**
+ * Convert base64 dataURL to Blob
+ * @param {string} dataURL
+ * @returns {Blob}
+ */
+function dataURLtoBlob(dataURL) {
+    const [header, base64] = dataURL.split(',');
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(base64);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+    return new Blob([array], { type: mime });
 }

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
+from typing import Optional
 import logging
 import uuid
 import base64
@@ -19,8 +20,10 @@ from .models.schemas import (
     DiagnosisHistory,
     HistoryListResponse,
     HealthResponse,
-    PreviewResponse
+    PreviewResponse,
+    GradCAMResponse
 )
+from .services.gradcam import generate_gradcam_overlay
 from .services.preprocessing import validate_image, preprocess_image, save_uploaded_image
 from .services.inference import model_service
 from .services.storage import storage_service
@@ -346,6 +349,84 @@ async def preview_preprocessing(file: UploadFile = File(..., description="Ảnh 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi khi xử lý ảnh preview: {str(e)}"
+        )
+
+
+@app.post(
+    f"{settings.API_V1_PREFIX}/gradcam",
+    response_model=GradCAMResponse,
+    tags=["Explainability"],
+    summary="Tạo GradCAM heatmap",
+    description="Upload ảnh để tạo heatmap GradCAM giải thích vùng AI tập trung khi chẩn đoán"
+)
+async def gradcam(
+    file: UploadFile = File(..., description="Ảnh da cần giải thích"),
+    target_class: Optional[str] = None
+):
+    """
+    Sinh GradCAM heatmap cho ảnh đã upload.
+
+    - **file**: File ảnh (JPG, PNG) tối đa 10MB  
+    - **target_class**: Tên class muốn giải thích (mặc định: class dự đoán)
+
+    Returns heatmap overlay dưới dạng base64 image
+    """
+    from .utils.constants import CLASS_NAMES
+
+    if not model_service.is_loaded():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Model chưa được load"
+        )
+
+    try:
+        file_content = await file.read()
+
+        # Validate image
+        is_valid, error_msg = validate_image(file_content, file.filename)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg
+            )
+
+        # Preprocess
+        logger.info(f"GradCAM: preprocessing image {file.filename}")
+        preprocessed_img = preprocess_image(file_content)
+
+        # Resolve target class index
+        class_idx = None
+        if target_class and target_class in CLASS_NAMES:
+            class_idx = CLASS_NAMES.index(target_class)
+            predicted_class_name = target_class
+        else:
+            # Let GradCAM use argmax (predicted class)
+            predicted_class_name, _, _ = model_service.predict(preprocessed_img)
+            class_idx = CLASS_NAMES.index(predicted_class_name)
+
+        logger.info(f"GradCAM: generating for class '{predicted_class_name}' (idx={class_idx})")
+
+        # Generate heatmap overlay
+        heatmap_b64 = generate_gradcam_overlay(
+            model=model_service._model,
+            image_array=preprocessed_img,
+            device=model_service._device,
+            class_idx=class_idx
+        )
+
+        return GradCAMResponse(
+            heatmap_overlay=f"data:image/jpeg;base64,{heatmap_b64}",
+            predicted_class=predicted_class_name,
+            class_idx=class_idx
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"GradCAM error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi tạo GradCAM: {str(e)}"
         )
 
 

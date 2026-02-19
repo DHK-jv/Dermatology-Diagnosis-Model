@@ -127,3 +127,19 @@ class PreviewResponse(BaseModel):
                 }
             }
         }
+
+
+class GradCAMResponse(BaseModel):
+    """Response model for GradCAM explainability endpoint"""
+    heatmap_overlay: str = Field(..., description="Base64 encoded heatmap overlay image")
+    predicted_class: str = Field(..., description="The class GradCAM was generated for")
+    class_idx: int = Field(..., description="Class index used for GradCAM")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "heatmap_overlay": "data:image/jpeg;base64,...",
+                "predicted_class": "melanoma",
+                "class_idx": 14
+            }
+        }
