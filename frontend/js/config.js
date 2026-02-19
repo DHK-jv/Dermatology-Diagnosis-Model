@@ -5,7 +5,15 @@
 
 const API_CONFIG = {
     // Backend API base URL
-    BASE_URL: 'http://localhost:8000',
+    // - Docker/Nginx (port 80/8080): empty string → nginx proxies /api/ to backend
+    // - Local dev via run.py (port 3000): direct call to localhost:8000
+    BASE_URL: (() => {
+        const port = window.location.port;
+        if (port === '3000' || port === '8000') {
+            return 'http://localhost:8000';  // Local dev: gọi thẳng backend
+        }
+        return '';  // Docker/Nginx: dùng same-origin (nginx proxy /api/)
+    })(),
 
     // API v1 prefix
     V1_PREFIX: '/api/v1',
