@@ -1,6 +1,6 @@
 # ============================================================
 # Backend Dockerfile - FastAPI + PyTorch + EfficientNet-B4
-# Build context: ./backend  (docker-compose sets this)
+# Build context: . (Project Root) - see docker-compose.yml
 # ============================================================
 FROM python:3.11-slim
 
@@ -22,12 +22,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Python dependencies ───────────────────────────────────────
-COPY requirements.txt .
+# Note: paths are relative to build context (.)
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ── Application code ──────────────────────────────────────────
-COPY app/ ./app/
+# Copy backend app code
+COPY backend/app/ ./app/
+
+# Copy shared preprocessing module (CRITICAL fix)
+COPY preprocessing/ ./preprocessing/
 
 # ── Model weights (mounted as volume at runtime) ──────────────
 # Create directory - actual .pth file mounted via docker-compose volume
@@ -37,7 +42,8 @@ RUN mkdir -p ml_models uploads
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HOST=0.0.0.0 \
-    PORT=8000
+    PORT=8000 \
+    PYTHONPATH=/app
 
 # ── Health check ──────────────────────────────────────────────
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -8,6 +8,9 @@ FROM nginx:alpine
 LABEL maintainer="Duong Hoang Khang"
 LABEL description="MedAI Dermatology - Frontend (Nginx)"
 
+# Install curl for reliable healthchecks
+RUN apk add --no-cache curl
+
 # Copy frontend static files vào nginx html root
 COPY . /usr/share/nginx/html/
 
@@ -17,5 +20,6 @@ RUN rm -f /usr/share/nginx/html/Dockerfile /usr/share/nginx/html/.dockerignore \
 
 EXPOSE 80
 
+# Use curl for healthcheck (wget can be flaky or missing parameters in strict Alpine)
 HEALTHCHECK --interval=30s --timeout=5s \
-    CMD wget -q -O /dev/null http://localhost/ || exit 1
+    CMD curl -f http://localhost/ || exit 1
