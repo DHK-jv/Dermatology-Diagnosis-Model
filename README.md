@@ -191,6 +191,7 @@ Pretrained: ImageNet weights
 - **Training Time**: ~10.4 hours
 - **Framework**: PyTorch 2.6+
 
+**Model Version:** V2 (73.9% val acc)  
 ---
 
 ## 🛠️ Development
@@ -215,14 +216,6 @@ cd frontend
 python -m http.server 8080
 ```
 
-### API Endpoints
-
-```
-GET  /                    - Health check
-POST /api/v1/diagnose     - Upload image for diagnosis
-GET  /api/v1/history      - Get diagnosis history
-```
-
 ---
 
 ## ⚠️ Disclaimer
@@ -232,14 +225,3 @@ AI predictions are for **reference only** and **do not replace professional medi
 Always consult a qualified dermatologist.
 
 ---
-
-## 📚 References
-
-- **Datasets:** [DermNet NZ](https://dermnetnz.org/), [ISIC 2019](https://challenge.isic-archive.com/), [PAD-UFES-20](https://data.mendeley.com/datasets/zr7vgbcyr2/1)
-- **Models:** [EfficientNet](https://arxiv.org/abs/1905.11946), [YOLOv8](https://github.com/ultralytics/ultralytics)
-
----
-
-**Last Updated:** February 2026  
-**Model Version:** V2 (73.9% val acc)  
-**Status:** ✅ Production Ready

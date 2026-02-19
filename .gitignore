@@ -63,30 +63,7 @@ data/
 *.zip
 *.rar
 *.tar.gz
-processed_isic_2019.zip
 
-# ============================================
-# MODEL WEIGHTS
-# ============================================
-
-# Ignore all models first
-*.keras
-*.h5
-*.hdf5
-*.pt
-*.pth
-*.ckpt
-*.onnx
-ml_models/
-backend/ml_models/
-models/
-
-# Allow specific models (under 100MB)
-!backend/ml_models/
-!backend/ml_models/yolov8n-seg.pt
-# Note: efficientnet_b4_derma_v2.pth (68MB) can be uploaded
-# Uncomment if you want to include it:
-# !backend/ml_models/efficientnet_b4_derma_v2.pth
 
 # ============================================
 # BACKEND TEMPORARY FILES
