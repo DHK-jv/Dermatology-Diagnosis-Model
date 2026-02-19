@@ -1,0 +1,32 @@
+# Backend .dockerignore
+# Exclude files not needed in Docker image
+
+# Model weights (mounted as volume, not baked in)
+ml_models/
+*.pth
+*.pt
+*.keras
+*.h5
+
+# Development artifacts
+uploads/
+history.json
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+
+# Development tools
+.env
+.env.local
+*.ipynb
+.ipynb_checkpoints/
+
+# Version control
+.git/
+.gitignore

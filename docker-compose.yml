@@ -1,0 +1,84 @@
+# ============================================================
+# Docker Compose - MedAI Dermatology
+# ============================================================
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose logs -f        # View logs
+#   docker compose down           # Stop all services
+#   docker compose down -v        # Stop and remove volumes
+# ============================================================
+
+name: medai-dermatology
+
+services:
+
+  # ── Backend: FastAPI + PyTorch ──────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medai_backend
+    restart: unless-stopped
+
+    # Environment
+    environment:
+      - PYTHONUNBUFFERED=1
+      - USE_MONGODB=${USE_MONGODB:-false}
+      - MONGODB_URL=${MONGODB_URL:-}
+
+    # Mount model weights and uploads (not baked into image)
+    volumes:
+      - ./backend/ml_models:/app/ml_models:ro # model weights (read-only)
+      - uploads_data:/app/uploads # persistent uploads
+
+    # Only expose internally (frontend proxies to it)
+    expose:
+      - "8000"
+
+    # Health check
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s # Give time for model to load
+
+    networks:
+      - medai_network
+    # GPU support (uncomment if deploying on GPU server with nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+    # ── Frontend: Nginx serving static files ───────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: medai_frontend
+    restart: unless-stopped
+
+    # Map host port 80 to container port 80
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - medai_network
+
+# ── Volumes ─────────────────────────────────────────────────
+volumes:
+  uploads_data:
+    driver: local
+
+# ── Networks ─────────────────────────────────────────────────
+networks:
+  medai_network:
+    driver: bridge
