@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 from typing import Tuple
 import io
+import sys
 
 from ..config import settings
 
@@ -44,9 +45,8 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
 
 # Initialize pipeline once to reuse the preprocessing pipeline
 try:
-    # Append project root to path so we can import src
-    import sys
-    sys.path.append(str(settings.PROJECT_ROOT))
+    # Import directly (PYTHONPATH handles path resolution in Docker and Local)
+    # We rely on PYTHONPATH=/app (Docker) or running from project root (Local)
     from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
     
     pipeline = HybridPreprocessingPipeline(
