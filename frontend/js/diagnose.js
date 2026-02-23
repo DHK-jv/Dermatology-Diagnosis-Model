@@ -210,16 +210,10 @@ async function fetchPreprocessingPreview(file) {
 
         console.log("DEBUG: API_CONFIG before fetch:", API_CONFIG);
 
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREVIEW}`, {
+        const data = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREVIEW}`, {
             method: 'POST',
             body: formData
         });
-
-        if (!response.ok) {
-            throw new Error('Preview failed');
-        }
-
-        const data = await response.json();
 
         // Hiện Hoạt Ảnh đồ họa (Animation) phân tích tiền xử lý
         if (data.steps) {
@@ -394,18 +388,12 @@ async function runDiagnosis() {
             if (loaderMsg) loaderMsg.textContent = 'AI đang phân tích ảnh...';
         }, 1000);
 
-        // Gửi hàm fetch thực hiện gọi AI prediction API
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
+        // Gửi hàm xử lý qua apiCall thay vì fetch để đính kèm Token đăng nhập
+        const result = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
             method: 'POST',
             body: formData
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Lỗi khi gọi API');
-        }
-
-        const result = await response.json();
         console.log('Diagnosis result:', result);
 
         hideLoader();
