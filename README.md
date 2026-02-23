@@ -139,7 +139,6 @@ MedAI_Dermatology/
 ├── 📄 run.py                        # Khởi động nhanh app
 ├── 📄 requirements.txt              # Các thư viện Python cần thiết
 └── 📄 README.md                     # File mô tả dự án này
-```
 
 ---
 
@@ -177,39 +176,11 @@ Hệ thống sử dụng một chuỗi tiền xử lý hình ảnh phức tạp:
 
 ## 🔬 Chi tiết Huấn luyện (Training)
 
-### **Thành phần Bộ Dữ liệu**
+- **Kiến trúc**: EfficientNet-B4 (PyTorch) với trọng số ImageNet.
+- **Tỷ lệ chia data**: 80% Train / 20% Validation. Dữ liệu được split theo ID bệnh nhân để tránh tình trạng Data Leakage.
+- **Tối ưu hóa**: Áp dụng MixUp augmentation và Micro learning rates để giảm thiểu Overfitting (từ version 2.0 lên 2.1).
+- **Phần cứng**: Train trên Kaggle Notebooks (NVIDIA P100 - 16GB VRAM).
 
-| Nguồn Cấp | Số Lượng Ảnh | Số Lớp | Cách dùng |
-|--------|--------|---------|-------|
-| DermNet NZ | ~23k | 23 | Dùng để train phần lớn |
-| ISIC 2019 | ~25k | 8 | Chuyên trị nhóm Ung thư Hắc tố |
-| PAD-UFES-20 | ~2k | 6 | Bổ trợ thêm Metadata bệnh nhân |
-| **Tổng cộng** | **~41k** | **24 (Đã gộp)** | **Kết hợp** |
-
-### **Tỷ lệ Chia Data (Data Split)**
-
-- **Tập Train (Huấn luyện)**: 80% (~33.000 ảnh)
-- **Tập Validation (Kiểm định)**: 20% (~8.000 ảnh)
-- **Phương pháp chia**: Chia theo Bệnh nhân (Ngăn rò rỉ dữ liệu - data leakage)
-- **Mức tối thiểu mỗi nhóm bệnh**: Dành ít nhất 50 ảnh kiểm định cho mỗi nhóm
-
-### **Cấu hình Huấn luyện**
-
-```python
-# Cấu hình AI
-Kiến trúc: EfficientNet-B4 (PyTorch)
-Trọng số khởi tạo: Trọng số gốc từ bài toán ImageNet
-
-```
-
-### **Nền tảng Train**
-
-- **Nền tảng**: Hệ thống Máy chủ Kaggle Notebooks
-- **Card Đồ họa (GPU)**: NVIDIA P100 (16GB VRAM)
-- **Thời gian Train dài nhất**: ~10,4 tiếng
-- **Môi trường**: PyTorch phiên bản 2.6+
-
-**Phiên bản Tốt nhất:** V2.1 (86.2% độ xác thực val acc)  
 ---
 
 ## 📈 Lịch sử Phát triển các Phiên bản Model
@@ -222,56 +193,29 @@ Trọng số khởi tạo: Trọng số gốc từ bài toán ImageNet
 
 ## 🛠️ Cài đặt Phát triển
 
-### Cài đặt tự động (Khuyến nghị dùng Docker & Nginx)
-
-Hệ thống cung cấp sẵn file `docker-compose.yml` giúp bạn triển khai toàn bộ dự án chỉ với một dòng lệnh, không cần lo lắng về việc cài đặt môi trường hay xung đột thư viện.
-
-**1. Vai trò của Docker và Nginx trong hệ thống:**
-- **Docker**: Đóng gói toàn bộ mã nguồn, các thư viện phức tạp (như PyTorch, FastAPI) thành các "container" độc lập. Việc này giúp dự án chạy ổn định và nhất quán trên mọi máy tính (Windows, Mac, Linux) y hệt như trên máy chủ phát triển mà không làm rác máy thật của bạn.
-- **Nginx**: Đóng vai trò là Web Server và Proxy ngược (Reverse Proxy).
-  - Tối ưu hóa truy xuất và bộ đệm (cache) cực nhanh cho các file giao diện tĩnh (HTML, CSS, JS).
-  - Định tuyến thông minh: Nginx sẽ hứng toàn bộ request. Nếu người dùng mở trang web, nó trả về giao diện Frontend. Nếu giao diện gọi nạp dữ liệu (`/api/*`), Nginx sẽ âm thầm chuyển tiếp lệnh đó sang Backend FastAPI đang chạy ngầm trên cổng 8000. Cơ chế này giúp xóa bỏ hoàn toàn lỗi bảo mật CORS (Cross-Origin) và quản lý luồng dữ liệu một cửa chuyên nghiệp như các hệ thống thực tế ngoài doanh nghiệp.
-
-**2. Cách khởi chạy:**
-
-Yêu cầu máy tính của bạn đã cài đặt sẵn [Docker Desktop](https://www.docker.com/products/docker-desktop/) (hoặc Docker Engine).
+### Chạy với Docker (Khuyên dùng)
+Yêu cầu máy đã cài sẵn Docker Desktop hoặc Docker Engine.
 
 ```bash
-# 1. Tải về và biên dịch toàn bộ hệ thống lên (chạy ngầm)
+git clone https://github.com/DHK-jv/Dermatology-Diagnosis-Model.git
+cd Dermatology-Diagnosis-Model
+
+# Build và chạy ngầm toàn bộ hệ thống (Backend + Frontend + Nginx)
 docker compose up -d --build
-
-# 2. Xem tiến trình log để biết khi nào Backend tải mượt mà mô hình AI xong (Bấm Ctrl+C để thoát xem logs)
-docker compose logs -f backend
 ```
+Truy cập ứng dụng tại: `http://localhost`
 
-Ứng dụng sẽ tự động hợp nhất và chạy tại một cổng duy nhất: **http://localhost** (cổng 80 mặc định). Bạn không cần phải mở 2 terminal như khi chạy thủ công.
-
-*Lệnh hỗ trợ dọn dẹp:*
-```bash
-# Tắt hệ thống
-docker compose down
-```
-
----
-
-### Cài đặt thủ công (Không dùng Docker)
+### Hoặc chạy thủ công (Môi trường Local)
 
 ```bash
-# Tạo môi trường ảo
-python -m venv .venv
-
-# Kích hoạt môi trường (Linux/Mac)
-source .venv/bin/activate  
-# Nếu ở Windows thì dùng lệnh: .venv\Scripts\activate
-
-# Cài đặt thư viện Python
+# Cài đặt thư viện
 pip install -r requirements.txt
 
-# Chạy Backend server
+# Terminal 1: Chạy Backend (FastAPI)
 cd backend
 uvicorn app.main:app --reload --port 8000
 
-# Chạy Frontend web (Mở bằng một Terminal/Cmd mới)
+# Terminal 2: Chạy Frontend (Web Server)
 cd frontend
 python -m http.server 8080
 ```
