@@ -222,6 +222,38 @@ Trọng số khởi tạo: Trọng số gốc từ bài toán ImageNet
 
 ## 🛠️ Cài đặt Phát triển
 
+### Cài đặt tự động (Khuyến nghị dùng Docker & Nginx)
+
+Hệ thống cung cấp sẵn file `docker-compose.yml` giúp bạn triển khai toàn bộ dự án chỉ với một dòng lệnh, không cần lo lắng về việc cài đặt môi trường hay xung đột thư viện.
+
+**1. Vai trò của Docker và Nginx trong hệ thống:**
+- **Docker**: Đóng gói toàn bộ mã nguồn, các thư viện phức tạp (như PyTorch, FastAPI) thành các "container" độc lập. Việc này giúp dự án chạy ổn định và nhất quán trên mọi máy tính (Windows, Mac, Linux) y hệt như trên máy chủ phát triển mà không làm rác máy thật của bạn.
+- **Nginx**: Đóng vai trò là Web Server và Proxy ngược (Reverse Proxy).
+  - Tối ưu hóa truy xuất và bộ đệm (cache) cực nhanh cho các file giao diện tĩnh (HTML, CSS, JS).
+  - Định tuyến thông minh: Nginx sẽ hứng toàn bộ request. Nếu người dùng mở trang web, nó trả về giao diện Frontend. Nếu giao diện gọi nạp dữ liệu (`/api/*`), Nginx sẽ âm thầm chuyển tiếp lệnh đó sang Backend FastAPI đang chạy ngầm trên cổng 8000. Cơ chế này giúp xóa bỏ hoàn toàn lỗi bảo mật CORS (Cross-Origin) và quản lý luồng dữ liệu một cửa chuyên nghiệp như các hệ thống thực tế ngoài doanh nghiệp.
+
+**2. Cách khởi chạy:**
+
+Yêu cầu máy tính của bạn đã cài đặt sẵn [Docker Desktop](https://www.docker.com/products/docker-desktop/) (hoặc Docker Engine).
+
+```bash
+# 1. Tải về và biên dịch toàn bộ hệ thống lên (chạy ngầm)
+docker compose up -d --build
+
+# 2. Xem tiến trình log để biết khi nào Backend tải mượt mà mô hình AI xong (Bấm Ctrl+C để thoát xem logs)
+docker compose logs -f backend
+```
+
+Ứng dụng sẽ tự động hợp nhất và chạy tại một cổng duy nhất: **http://localhost** (cổng 80 mặc định). Bạn không cần phải mở 2 terminal như khi chạy thủ công.
+
+*Lệnh hỗ trợ dọn dẹp:*
+```bash
+# Tắt hệ thống
+docker compose down
+```
+
+---
+
 ### Cài đặt thủ công (Không dùng Docker)
 
 ```bash
