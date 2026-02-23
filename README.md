@@ -193,7 +193,7 @@ Hệ thống sử dụng một chuỗi tiền xử lý hình ảnh phức tạp:
 
 ## 🛠️ Cài đặt Phát triển
 
-### Chạy với Docker (Khuyên dùng)
+### Chạy với Docker
 Yêu cầu máy đã cài sẵn Docker Desktop hoặc Docker Engine.
 
 ```bash
