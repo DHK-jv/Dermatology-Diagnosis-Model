@@ -203,12 +203,15 @@
                 <h3 class="text-lg font-bold text-[#101418] dark:text-white mb-4 flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary">visibility</span>
                     Giải Thích AI (GradCAM)
-                    <span class="text-xs font-normal text-[#5e758d] dark:text-gray-400 ml-2 bg-primary/10 px-2 py-0.5 rounded-full">xAI</span>
+                    <span
+                        class="text-xs font-normal text-[#5e758d] dark:text-gray-400 ml-2 bg-primary/10 px-2 py-0.5 rounded-full">xAI</span>
                 </h3>
-                <div class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] p-6 shadow-sm">
+                <div
+                    class="bg-white dark:bg-[#1a2632] rounded-xl border border-[#dae0e7] dark:border-[#2e3e50] p-6 shadow-sm">
                     <!-- Description -->
                     <p class="text-sm text-[#5e758d] dark:text-gray-400 mb-4">
-                        Heatmap hiển thị <strong class="text-[#101418] dark:text-white">vùng da</strong> model AI tập trung phân tích khi đưa ra chẩn đoán.
+                        Heatmap hiển thị <strong class="text-[#101418] dark:text-white">vùng da</strong> model AI tập
+                        trung phân tích khi đưa ra chẩn đoán.
                         🔴 Đỏ = quan trọng nhất &nbsp;|&nbsp; 🟡 Vàng = vừa &nbsp;|&nbsp; 🔵 Xanh = ít ảnh hưởng.
                     </p>
 
@@ -226,14 +229,18 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- Original Image -->
                                 <div>
-                                    <p class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">Ảnh Gốc</p>
+                                    <p
+                                        class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">
+                                        Ảnh Gốc</p>
                                     <img id="gradcam-original"
                                         class="w-full rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] object-cover"
                                         src="" alt="Ảnh gốc" style="max-height:300px;object-fit:contain;" />
                                 </div>
                                 <!-- GradCAM Overlay -->
                                 <div>
-                                    <p class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">Heatmap Overlay</p>
+                                    <p
+                                        class="text-xs font-semibold text-[#5e758d] dark:text-gray-400 uppercase tracking-wide mb-2">
+                                        Heatmap Overlay</p>
                                     <img id="gradcam-heatmap"
                                         class="w-full rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] object-cover"
                                         src="" alt="GradCAM Heatmap" style="max-height:300px;object-fit:contain;" />
@@ -241,16 +248,80 @@
                             </div>
                             <p class="text-xs text-[#5e758d] dark:text-gray-500 mt-3 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-sm">info</span>
-                                GradCAM được tính dựa trên gradient của class <strong id="gradcam-class-label" class="text-primary">-</strong>
+                                GradCAM được tính dựa trên gradient của class <strong id="gradcam-class-label"
+                                    class="text-primary">-</strong>
                                 qua lớp conv cuối của EfficientNet-B4.
                             </p>
                         </div>
 
                         <!-- Error State -->
                         <div id="gradcam-error" class="hidden flex-col items-center justify-center h-32 text-center">
-                            <span class="material-symbols-outlined text-4xl text-[#dae0e7] dark:text-[#2e3e50] mb-2">broken_image</span>
+                            <span
+                                class="material-symbols-outlined text-4xl text-[#dae0e7] dark:text-[#2e3e50] mb-2">broken_image</span>
                             <p class="text-sm text-[#5e758d] dark:text-gray-400">Không thể tạo GradCAM. Thử lại sau.</p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GradCAM Explainability Section -->
+            <section class="mb-8" id="gradcam-section">
+                <!-- ... existing gradcam ... -->
+            </section>
+
+            <!-- Feedback Section -->
+            <section class="mb-8" id="feedback-section">
+                <div
+                    class="bg-blue-50 dark:bg-[#1a2632] rounded-xl border border-blue-100 dark:border-[#2e3e50] p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-[#101418] dark:text-white mb-2 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">rate_review</span>
+                        Đánh Giá Chẩn Đoán AI
+                    </h3>
+                    <p class="text-sm text-[#5e758d] dark:text-gray-400 mb-4">
+                        Theo bạn, AI chẩn đoán bệnh này có chính xác không? Phản hồi của bạn sẽ giúp hệ thống học hỏi và
+                        cải thiện trong tương lai.
+                    </p>
+
+                    <div id="feedback-form" class="space-y-4">
+                        <div class="flex gap-4">
+                            <button id="btn-feedback-correct"
+                                class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 font-medium transition bg-white dark:bg-[#23303e]">
+                                <span class="material-symbols-outlined">thumb_up</span> Đúng
+                            </button>
+                            <button id="btn-feedback-incorrect"
+                                class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded border border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition bg-white dark:bg-[#23303e]">
+                                <span class="material-symbols-outlined">thumb_down</span> Sai
+                            </button>
+                        </div>
+
+                        <!-- Incorrect options (hidden by default) -->
+                        <div id="feedback-incorrect-details"
+                            class="hidden flex-col gap-3 mt-4 p-4 bg-white dark:bg-[#23303e] rounded border border-[#dae0e7] dark:border-[#2e3e50]">
+                            <label class="text-sm font-semibold text-[#101418] dark:text-white">Bệnh thực sự là
+                                gì?</label>
+                            <select id="feedback-actual-class"
+                                class="p-2 border border-[#dae0e7] dark:border-[#2e3e50] rounded bg-white dark:bg-[#1a2632] text-[#101418] dark:text-white focus:outline-none focus:border-primary">
+                                <option value="">-- Chọn bệnh --</option>
+                                <!-- Populate with js -->
+                            </select>
+
+                            <label class="text-sm font-semibold text-[#101418] dark:text-white mt-2">Ghi chú thêm (Tùy
+                                chọn)</label>
+                            <textarea id="feedback-notes"
+                                class="p-2 border border-[#dae0e7] dark:border-[#2e3e50] rounded bg-white dark:bg-[#1a2632] text-[#101418] dark:text-white w-full h-20 focus:outline-none focus:border-primary"
+                                placeholder="Biểu hiện lâm sàng, lý do sai..."></textarea>
+
+                            <button id="btn-submit-feedback"
+                                class="mt-2 w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-white font-bold rounded hover:bg-blue-600 transition">
+                                Gửi Phản Hồi
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="feedback-success"
+                        class="hidden text-green-600 dark:text-green-400 flex items-center gap-2 font-medium bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Cảm ơn bạn đã đóng góp! Phản hồi đã được ghi nhận.
                     </div>
                 </div>
             </section>
@@ -279,10 +350,15 @@
         </main>
     </div>
 
+    <!-- Libraries for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- JavaScript Files -->
     <script type="module" src="../js/medical-terms.js?v=24classes"></script>
     <script src="../js/config.js"></script>
     <script src="../js/utils.js"></script>
+    <script src="../js/auth.js?v=3"></script>
     <script src="../js/app.js"></script>
     <script type="module" src="../js/result.js?v=24classes"></script>
     </body>

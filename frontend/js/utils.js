@@ -1,27 +1,42 @@
 /**
- * Utility Functions
- * Helper functions for API calls, validation, formatting, etc.
+ * Các Hàm Tiện Ích (Utility Functions)
+ * Các hàm hỗ trợ cho việc gọi API, xác thực, định dạng hóa, v.v
  */
 
 /**
- * Make an API call with error handling
- * @param {string} url - API endpoint URL
- * @param {object} options - Fetch options
- * @returns {Promise<object>} Response data
+ * Thực thi việc gọi API kết hợp với cơ chế bắt lỗi và đính kèm Xác Thực (Authentication)
+ * @param {string} url - Đường dẫn đích của API
+ * @param {object} options - Cấu hình truy vấn
+ * @returns {Promise<object>} Dữ liệu JSON phản hồi
  */
 async function apiCall(url, options = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
     try {
-        const response = await fetch(url, {
+        // Chuẩn bị header và nhét token xác thực vào nếu có tồn tại
+        const headers = new Headers(options.headers || {});
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            headers.set('Authorization', `Bearer ${token}`);
+        }
+
+        // Ngăn chặn việc vô ý ghi đè các cấu hình config cũ
+        const fetchOptions = {
             ...options,
+            headers,
             signal: controller.signal
-        });
+        };
+
+        const response = await fetch(url, fetchOptions);
 
         clearTimeout(timeout);
 
         if (!response.ok) {
+            if (response.status === 401) {
+                // Token đã quá hạn hoặc không còn nguyên vẹn
+                handleUnauthorized();
+            }
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
         }
@@ -40,17 +55,33 @@ async function apiCall(url, options = {}) {
 }
 
 /**
- * Validate image file
- * @param {File} file - Image file to validate
- * @returns {object} {valid: boolean, error: string}
+ * Thực hiện xử lý các phản hồi trả về mã lỗi 401 Unauthorized từ chối Quyền của API
+ */
+function handleUnauthorized() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_info');
+
+    // Chỉ chuyển hướng nếu người dùng không thuộc trang chủ nền (nơi bộ đăng nhập có thể đã được tự động xử lý rồi)
+    if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
+        showError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        setTimeout(() => {
+            window.location.href = '/index.html?login=true';
+        }, 1500);
+    }
+}
+
+/**
+ * Xác thực (Validate) tính đúng đắn của tập tin hình ảnh tải lên
+ * @param {File} file - Tệp file hình được trỏ
+ * @returns {object} {valid: boolean, error: string} Trạng thái hợp lệ kèm báo cáo văn bản
  */
 function validateImage(file) {
-    // Check if file exists
+    // Xác minh file có tồn tại không
     if (!file) {
         return { valid: false, error: 'Vui lòng chọn file ảnh' };
     }
 
-    // Check file extension
+    // Kiểm tra đuôi file mở rộng (extension)
     const extension = file.name.split('.').pop().toLowerCase();
     if (!API_CONFIG.ALLOWED_EXTENSIONS.includes(extension)) {
         return {
@@ -59,7 +90,7 @@ function validateImage(file) {
         };
     }
 
-    // Check file size
+    // Kiểm tra dung lượng file tải lên
     const fileSizeMB = file.size / (1024 * 1024);
     if (fileSizeMB > API_CONFIG.MAX_FILE_SIZE_MB) {
         return {
@@ -68,7 +99,7 @@ function validateImage(file) {
         };
     }
 
-    // Check MIME type
+    // Kiểm tra kiểu MIME tiêu chuẩn nội dung file
     if (!file.type.startsWith('image/')) {
         return { valid: false, error: 'File không phải là ảnh hợp lệ' };
     }
@@ -77,9 +108,9 @@ function validateImage(file) {
 }
 
 /**
- * Format date to Vietnamese readable format
- * @param {string|Date} date - Date to format
- * @returns {string} Formatted date string
+ * Định dạng format lại ngày giờ cho chuẩn cấu trúc đọc hiểu của người Việt Nam
+ * @param {string|Date} date - Đối tượng Dữ liệu ngày cần format
+ * @returns {string} Trả về chuỗi ngày tháng sau khi đã format
  */
 function formatDate(date) {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -96,9 +127,9 @@ function formatDate(date) {
 }
 
 /**
- * Format date to short format
- * @param {string|Date} date - Date to format
- * @returns {string} Formatted date string
+ * Format định nghĩa cấu trúc ngày tháng kiểu thu gọn (short format)
+ * @param {string|Date} date - Object ngày tháng
+ * @returns {string} Text Chuỗi ngày rút gọn
  */
 function formatDateShort(date) {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -111,11 +142,11 @@ function formatDateShort(date) {
 }
 
 /**
- * Show loading indicator
- * @param {string} message - Loading message
+ * Hiển thị lên màn hình trạng thái báo đang chờ xử lý (Loading indicator)
+ * @param {string} message - Thông báo mô tả tiến trình đang load gì
  */
 function showLoader(message = 'Đang xử lý...') {
-    // Create loader overlay if doesn't exist
+    // Tạo thêm lớp nền phủ loading trong trường hợp nó được gỡ xóa trên trình duyệt
     let loader = document.getElementById('global-loader');
 
     if (!loader) {
@@ -131,7 +162,7 @@ function showLoader(message = 'Đang xử lý...') {
         document.body.appendChild(loader);
     }
 
-    // Update message
+    // Cập nhật thẻ text thông điệp
     const messageEl = document.getElementById('loader-message');
     if (messageEl) {
         messageEl.textContent = message;
@@ -141,7 +172,7 @@ function showLoader(message = 'Đang xử lý...') {
 }
 
 /**
- * Hide loading indicator
+ * Ẩn và che đi màn hình thông báo tải giao diện Loader
  */
 function hideLoader() {
     const loader = document.getElementById('global-loader');
@@ -151,36 +182,36 @@ function hideLoader() {
 }
 
 /**
- * Show error toast notification
- * @param {string} message - Error message
+ * Hiển thị khối hộp Pop Toast thông báo xảy ra lỗi (Error)
+ * @param {string} message - Nội dung báo lỗi mô tả
  */
 function showError(message) {
     showToast(message, 'error');
 }
 
 /**
- * Show success toast notification
- * @param {string} message - Success message
+ * Hiển thị hộp loại Toast thông báo trạng thái thao tác thành công (Success)
+ * @param {string} message - Thông điệp vinh quang
  */
 function showSuccess(message) {
     showToast(message, 'success');
 }
 
 /**
- * Show toast notification
- * @param {string} message - Notification message
- * @param {string} type - Type: 'success', 'error', 'info'
+ * Hiển thị khối hộp Toast thông báo nhanh bao quát cho UI ứng dụng
+ * @param {string} message - Dòng Lời thông báo nội dung
+ * @param {string} type - Chuẩn báo hiệu cờ Type flag trạng thái: 'success', 'error', 'info'
  */
 function showToast(message, type = 'info') {
-    // Remove existing toasts
+    // Xóa đi các dòng thông báo toast cũ hiện tại
     const existing = document.querySelectorAll('.toast-notification');
     existing.forEach(t => t.remove());
 
-    // Create toast
+    // Tạo thiết lập khối cấu trúc hộp thoại thẻ html pop toast
     const toast = document.createElement('div');
     toast.className = 'toast-notification fixed top-4 right-4 z-50 max-w-md bg-white dark:bg-slate-800 rounded-lg shadow-xl border-l-4 p-4 animate-slide-in';
 
-    // Set border color based on type
+    // Thiết lập chọn loại màu Border viền theo trạng thái báo (type)
     const colors = {
         success: 'border-green-500',
         error: 'border-red-500',
@@ -188,7 +219,7 @@ function showToast(message, type = 'info') {
     };
     toast.classList.add(colors[type] || colors.info);
 
-    // Icon
+    // Biểu tượng Icon trang trí
     const icons = {
         success: '✓',
         error: '✕',
@@ -209,7 +240,7 @@ function showToast(message, type = 'info') {
 
     document.body.appendChild(toast);
 
-    // Auto-remove after 5 seconds
+    // Cài đặt hẹn giờ Tự động tắt thu hồi toast HTML sau khi tròn 5 giây hiển thị
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
@@ -218,10 +249,10 @@ function showToast(message, type = 'info') {
 }
 
 /**
- * Get risk level badge HTML
- * @param {string} riskLevel - Risk level: 'low', 'medium', 'high', 'very_high'
- * @param {string} riskLevelVi - Vietnamese risk level text
- * @returns {string} HTML string for badge
+ * Sinh ra thẻ nhãn HTML phân cấp độ Nguy rủi ro do nhãn dán (Risk badge HTML)
+ * @param {string} riskLevel - Loại cảnh báo dán nhãn: 'low', 'medium', 'high', 'very_high'
+ * @param {string} riskLevelVi - Tiếng việt mô tả cho nhãn rủi ro đó
+ * @returns {string} Trả về cấu trúc chuỗi HTML trần cho huy hiệu badge
  */
 function getRiskBadge(riskLevel, riskLevelVi) {
     const badges = {
@@ -243,9 +274,9 @@ function getRiskBadge(riskLevel, riskLevelVi) {
 }
 
 /**
- * Store data in localStorage
- * @param {string} key - Storage key
- * @param {any} value - Value to store
+ * Nạp khóa dữ liệu vô kho lưu trữ LocalStorage nội bộ trình duyệt user browser
+ * @param {string} key - Tên chìa khóa (Key)
+ * @param {any} value - Nội dung Giá trị quy định cho ghi lại
  */
 function store(key, value) {
     try {
@@ -256,9 +287,9 @@ function store(key, value) {
 }
 
 /**
- * Retrieve data from localStorage
- * @param {string} key - Storage key
- * @returns {any} Stored value or null
+ * Truy xuất lấy ra khối dữ liệu đang nắm tại bộ lưu trữ localStorage trình duyệt ra sử dụng
+ * @param {string} key - Tên chìa khóa truy vấn truy cập vào Storage
+ * @returns {any} Giá trị của JSON kho đó hoặc lấy rác rỗng Null
  */
 function retrieve(key) {
     try {
@@ -271,14 +302,15 @@ function retrieve(key) {
 }
 
 /**
- * Navigate to a page with optional query params
- * @param {string} path - Target page path
- * @param {object} params - Query parameters
+ * Di chuyển điều hướng sang trang URL HTML khác được phép đưa kèm theo tham số thông điệp truy vấn Query (URL Params) qua trang mới
+ * @param {string} path - URL đường dẫn của file thẻ HTML đích điểm nhắm tới
+ * @param {object} params - Object Dictionary bao các giá trị tham số cấp kèm theo
  */
 function navigateTo(path, params = {}) {
     const url = new URL(path, window.location.origin);
 
-    // Add query params
+    // Móc gắn các thông tin biến dữ liệu Params vào sau đường dẫn truyền lệnh URL Query
+    // Xây query params
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== null) {
             url.searchParams.set(key, params[key]);
@@ -289,16 +321,16 @@ function navigateTo(path, params = {}) {
 }
 
 /**
- * Get URL parameter by name
- * @param {string} name - Parameter name
- * @returns {string|null} Parameter value
+ * Đọc tham khảo rút trích xuất Query param biến số theo tên quy ước chỉ định trên URL parameters
+ * @param {string} name - Tên đối số (query param)
+ * @returns {string|null} Trả về mảng text thông tin của cấu hình URL get var
  */
 function getUrlParam(name) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
 }
 
-// Add animation styles
+// Thêm nhúng các cụm chỉ định định dạng chuyển cảnh Animation bổ trợ cho ứng dụng bằng CSS inline
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slide-in {

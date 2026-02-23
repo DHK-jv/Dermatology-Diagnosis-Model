@@ -1,12 +1,12 @@
 /**
- * Diagnosis / Upload Page Logic
- * Handle image upload, preview, and prediction
+ * Logic Trang Chẩn đoán / Tải lên
+ * Xử lý tải ảnh, xem trước và gọi phán đoán
  */
 
 let selectedFile = null;
 let previewImage = null;
 
-// Initialize when DOM is loaded
+// Khởi tạo trang khi DOM đã tải xong
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Diagnosis page initialized');
 
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /**
- * Setup file upload handlers
+ * Thiết lập các trình xử lý việc tải ảnh lên
  */
 function setupFileUpload() {
     const dropzone = document.querySelector('[data-upload-zone]') ||
@@ -25,12 +25,12 @@ function setupFileUpload() {
 
     if (!dropzone) return;
 
-    // Click to upload
+    // Nhấn chuột để tải file
     dropzone.addEventListener('click', () => {
         fileInput.click();
     });
 
-    // File input change
+    // Sự kiện khi input chọn file thay đổi
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -38,7 +38,7 @@ function setupFileUpload() {
         }
     });
 
-    // Drag and drop
+    // Kéo thả (Drag and drop)
     dropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropzone.classList.add('border-primary', 'bg-primary/10');
@@ -60,7 +60,7 @@ function setupFileUpload() {
 }
 
 /**
- * Create hidden file input if doesn't exist
+ * Tạo thẻ input chọn file bị ẩn đi nếu chưa code có sẵn trên diện mạo
  */
 function createFileInput() {
     let input = document.getElementById('file-input');
@@ -76,13 +76,13 @@ function createFileInput() {
 }
 
 /**
- * Handle file selection
- * @param {File} file - Selected file
+ * Xử lý sau khi tệp tin đã được chọn thành công
+ * @param {File} file - File ảnh
  */
 function handleFileSelect(file) {
     console.log('File selected:', file.name);
 
-    // Validate image
+    // Kiểm tra tính hợp lệ của ảnh
     const validation = validateImage(file);
     if (!validation.valid) {
         showError(validation.error);
@@ -91,19 +91,15 @@ function handleFileSelect(file) {
 
     selectedFile = file;
 
-    // Show preview
+    // Hiển thị lên màn hình xem trước
     showImagePreview(file);
 
     showSuccess('Ảnh đã được chọn. Nhấn "Phân tích" để bắt đầu.');
 }
 
 /**
- * Show image preview
- * @param {File} file - Image file
- */
-/**
- * Show image preview and trigger preprocessing
- * @param {File} file - Image file
+ * Hiển thị xem trước hình ảnh và kích hoạt tiền xử lý phân tích
+ * @param {File} file - Tệp đồ họa
  */
 function showImagePreview(file) {
     if (typeof FileReader === "undefined") {
@@ -117,14 +113,14 @@ function showImagePreview(file) {
         console.log("FileReader loaded image successfully");
         previewImage = e.target.result;
 
-        // Show grid, hide placeholder prompt
+        // Hiện danh sách dạng grid, ẩn nội dung giữ chỗ ban đàu
         const previewGrid = document.getElementById('preview-grid');
         const fileInfoBar = document.getElementById('file-info-bar');
 
         if (previewGrid) {
-            // Remove inline style="display: none;" that might be stuck
+            // Gỡ bỏ style='display: none;' nếu đang bị kẹt lại
             previewGrid.removeAttribute('style');
-            // Ensure flex class is active and hidden is removed
+            // Đảm bảo thuộc tính lớp css có chứa flex và thu hồi class hidden
             previewGrid.classList.remove('hidden');
             previewGrid.classList.add('flex');
         } else {
@@ -136,14 +132,14 @@ function showImagePreview(file) {
             fileInfoBar.style.display = 'flex';
         }
 
-        // Update Original Image
+        // Cập nhật Ảnh Gốc (Original Image)
         const previewContainer = document.querySelector('[data-preview-container]');
         if (previewContainer) {
             const imgElement = previewContainer.querySelector('img');
             if (imgElement) {
                 imgElement.src = previewImage;
                 imgElement.alt = file.name;
-                // Force a redraw/check
+                // Buộc vẽ lại / Cập nhật khung ảnh gốc
                 imgElement.style.display = 'block';
                 console.log("Image src set. Container found.");
             } else {
@@ -153,7 +149,7 @@ function showImagePreview(file) {
             console.error("Critical: [data-preview-container] selector failed");
         }
 
-        // Update File Info
+        // Cập nhật Thông Tin Của Tệp (File Info)
         const filenameEl = document.getElementById('filename-display');
         const filesizeEl = document.getElementById('filesize-display');
 
@@ -163,7 +159,7 @@ function showImagePreview(file) {
             filesizeEl.textContent = `${sizeMB} MB`;
         }
 
-        // Trigger Preprocessing Preview
+        // Kích hoạt chức năng Tạm Lướt Tiền xử lý (Preprocessing Preview)
         if (typeof API_CONFIG !== 'undefined') {
             fetchPreprocessingPreview(file);
         } else {
@@ -181,19 +177,19 @@ function showImagePreview(file) {
 
 
 /**
- * Reset upload state
+ * Làm mới (Reset) lại trạng thái cửa sổ tải lên
  */
 window.resetUpload = function () {
     selectedFile = null;
     previewImage = null;
 
-    // Hide preview
+    // Ẩn bảng hiển thị xem trước
     const previewGrid = document.getElementById('preview-grid');
     const fileInfoBar = document.getElementById('file-info-bar');
     if (previewGrid) previewGrid.style.display = 'none';
     if (fileInfoBar) fileInfoBar.classList.add('hidden');
 
-    // Reset file input
+    // Format lại trạng thái (Reset file input)
     const fileInput = document.getElementById('file-input');
     if (fileInput) fileInput.value = '';
 
@@ -203,11 +199,11 @@ window.resetUpload = function () {
 async function fetchPreprocessingPreview(file) {
     const loadingEl = document.getElementById('processed-loading');
 
-    // UI Start State
+    // Trạng thái Giao diện Bắt đầu
     if (loadingEl) loadingEl.classList.remove('hidden');
 
     try {
-        // Create form data
+        // Tạo bộ dữ liệu Form data
         const formData = new FormData();
         formData.append('file', file);
         formData.append('return_steps', 'true');
@@ -225,7 +221,7 @@ async function fetchPreprocessingPreview(file) {
 
         const data = await response.json();
 
-        // Run Animation
+        // Hiện Hoạt Ảnh đồ họa (Animation) phân tích tiền xử lý
         if (data.steps) {
             await runPreprocessingAnimation(data.steps);
         }
@@ -233,7 +229,7 @@ async function fetchPreprocessingPreview(file) {
     } catch (error) {
         console.error('Preview error:', error);
 
-        // Show status error
+        // Hiển thị trạng thái phát sinh hiện tượng Lỗi
         const statusEl = document.getElementById('step-status');
         const statusLabel = document.getElementById('step-label');
         if (statusEl && statusLabel) {
@@ -249,8 +245,8 @@ async function fetchPreprocessingPreview(file) {
 }
 
 /**
- * Run the preprocessing animation
- * @param {Object} steps - Dictionary of base64 images {step_name: base64_string}
+ * Chạy hiệu ứng xem trước ảnh đã được xử lý
+ * @param {Object} steps - Dictionary của bộ mã định dạng base64 chứa hình xử lý {step_name: base64_string}
  */
 async function runPreprocessingAnimation(steps) {
     const previewContainer = document.querySelector('[data-preview-container]');
@@ -263,13 +259,13 @@ async function runPreprocessingAnimation(steps) {
         return;
     }
 
-    // Reset status UI
+    // Đặt lại các tín hiệu trạng thái UI
     statusEl.classList.remove('hidden');
     statusEl.classList.replace('bg-red-500/90', 'bg-black/70');
     statusEl.querySelector('span').classList.remove('bg-white');
     statusEl.querySelector('span').classList.add('bg-green-500', 'animate-pulse');
 
-    // Define sequence
+    // Thiết lập trật tự biến đổi phân đoạn hình ảnh
     const sequence = [
         { key: 'original', label: 'Original Image', delay: 1000 },
         { key: 'cropped', label: '1. Segmentation (Cropping)', delay: 1000 },
@@ -278,20 +274,18 @@ async function runPreprocessingAnimation(steps) {
         { key: 'normalized', label: '4. Normalization (Final)', delay: 0 }
     ];
 
-    // Prepare steps including original if available (it might not be in 'steps' object from backend if only processed steps returned)
-    // Actually backend returns 'original' in steps? Let's check. 
-    // If not, we rely on what's already there (original).
+    // Quét bao gồm qua ảnh 'original' (nếu chưa có trong object payload API)
 
-    // Iterate through sequence
+    // Lặp theo từng chuỗi phân tích
     for (const step of sequence) {
         if (step.key === 'original') {
-            // Just show status, image is already there or we don't have it in steps payload usually
+            // Chỉ có thể thay đổi trên trạng thái mô tả Text (ảnh original đã cố định từ lúc người dùng upload ảnh rồi)
             statusLabel.textContent = step.label;
         } else if (steps[step.key]) {
-            // Update image and label
+            // Cập nhật nhãn và thay hình ảnh
             statusLabel.textContent = step.label;
 
-            // Fade out slightly
+            // Chỉnh mờ hình ảnh từ từ
             imgElement.style.opacity = '0.8';
 
             await new Promise(r => setTimeout(r, 100));
@@ -299,7 +293,7 @@ async function runPreprocessingAnimation(steps) {
             imgElement.src = steps[step.key];
             imgElement.style.opacity = '1';
         } else {
-            continue; // Skip missing steps
+            continue; // Bỏ qua nếu các bước tiến quá nhanh mà API chưa kịp gửi response
         }
 
         if (step.delay > 0) {
@@ -307,14 +301,14 @@ async function runPreprocessingAnimation(steps) {
         }
     }
 
-    // Animation complete
+    // Chuỗi xử lý đồ họa Animation đã hoàn tất
     statusEl.classList.replace('bg-black/70', 'bg-primary/90');
     statusLabel.textContent = "Ready for Analysis";
     statusEl.querySelector('span').classList.remove('animate-pulse');
 }
 
 /**
- * Setup camera capture button
+ * Thiết lập nhấn mở nút Cụm tùy chọn chụp Máy Ảnh (Camera)
  */
 function setupCameraCapture() {
     const cameraBtn = document.querySelector('[data-camera-btn]') ||
@@ -326,20 +320,20 @@ function setupCameraCapture() {
 
     cameraBtn.addEventListener('click', async () => {
         try {
-            // Request camera access
+            // Yêu cầu quyền truy cập Camera từ Browser
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' } // Prefer back camera on mobile
+                video: { facingMode: 'environment' } // Ưu tiên chọn cụm camera mặt sau của Di động (back camera)
             });
 
-            // Create video element for camera preview
+            // Tạo phần tử thẻ DOM video phát trực tiếp luồng camera
             const video = document.createElement('video');
             video.srcObject = stream;
             video.autoplay = true;
 
-            // Show camera modal (simplified - you can enhance this)
+            // Hiển thị khung video xem trước camera (hiện tại tính năng thu hình chưa có nên sẽ bắt Lỗi thông báo tới người dùng)
             showError('Chức năng camera đang được phát triển. Vui lòng upload ảnh từ thư viện.');
 
-            // Stop camera
+            // Hủy/Stop quá trình ghi hình ảnh
             stream.getTracks().forEach(track => track.stop());
 
         } catch (error) {
@@ -350,10 +344,10 @@ function setupCameraCapture() {
 }
 
 /**
- * Setup analyze button
+ * Thiết lập lắng nghe sự kiện nút Bắt đầu Phân tích (Analyze)
  */
 function setupAnalyzeButton() {
-    // Use data attribute first, then fallback to text search
+    // Nhắm mục tiêu dùng html attribute chứa selector (thuộc tính data) trước, sau đó tra text dự phòng
     const analyzeBtn = document.querySelector('[data-analyze-btn]') ||
         Array.from(document.querySelectorAll('button')).find(btn =>
             btn.textContent.includes('Phân Tích') || btn.textContent.includes('Analyze')
@@ -379,7 +373,7 @@ function setupAnalyzeButton() {
 }
 
 /**
- * Run AI diagnosis
+ * Khởi chạy chu trình chẩn đoán (Diagnostic API execution)
  */
 async function runDiagnosis() {
     if (!selectedFile) {
@@ -390,17 +384,17 @@ async function runDiagnosis() {
     try {
         showLoader('Đang tải ảnh lên server...');
 
-        // Create form data
+        // Khởi tạo Form chứa tệp tin ảnh gửi đi
         const formData = new FormData();
         formData.append('file', selectedFile);
 
-        // Update loader message
+        // Cập nhật chuỗi thông điệp tiến độ trên form Loader
         setTimeout(() => {
             const loaderMsg = document.getElementById('loader-message');
             if (loaderMsg) loaderMsg.textContent = 'AI đang phân tích ảnh...';
         }, 1000);
 
-        // Call predict API
+        // Gửi hàm fetch thực hiện gọi AI prediction API
         const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
             method: 'POST',
             body: formData
@@ -416,10 +410,10 @@ async function runDiagnosis() {
 
         hideLoader();
 
-        // Store result for result page
+        // Lưu trữ object response (đáp ứng) để phục vụ qua trang kết quả (result page) hiển thị
         store('latestDiagnosis', result);
 
-        // Save original image for GradCAM (result page will use this)
+        // Lưu lại hình khối base64 của bức hình Gốc (phục hồi cho vẽ Overlay xử lý GradCAM ở trang result)
         if (previewImage) {
             try {
                 sessionStorage.setItem('lastUploadedImage', previewImage);
@@ -428,7 +422,7 @@ async function runDiagnosis() {
             }
         }
 
-        // Navigate to result page
+        // Điều hướng chuyến tiếp giao diện người dùng tới trang result HTML
         showSuccess('Phân tích hoàn tất!');
         setTimeout(() => {
             navigateTo('result.html', { diagnosisId: result.diagnosis_id });

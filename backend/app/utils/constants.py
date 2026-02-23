@@ -1,10 +1,19 @@
 """
-Constants and disease information mappings
+Định nghĩa các hằng số và bản đồ dữ liệu bệnh lý
 """
 
-# Class names from model training (in order of model output)
-# Standardized Dermnet NZ classes (24 classes)
-# Optimized Class List (Merged and Cleaned)
+# Tên các lớp (classes) từ quá trình huấn luyện mô hình (theo thứ tự đầu ra của mô hình)
+# Các lớp chuẩn hóa của Dermnet NZ (24 lớp)
+# Danh sách lớp đã được tối ưu hóa (Đã gộp và làm sạch)
+CRITICAL_DISEASE_THRESHOLDS = {
+    'melanoma': 0.20,                 # Ung thư cực kỳ nguy hiểm
+    'basal_cell_carcinoma': 0.20,     # Ung thư
+    'squamous_cell_carcinoma': 0.20,  # Ung thư
+    'lupus_connective_tissue': 0.20,  # Bệnh tự miễn nghiêm trọng
+    'systemic_disease': 0.20,         # Nghiêm trọng
+    'vasculitis': 0.20                # Nghiêm trọng
+}
+
 CLASS_NAMES = [
     'acne_rosacea', 'actinic_keratosis', 'alopecia_hair_loss', 'basal_cell_carcinoma',
     'bullous_disease_pemphigus', 'cellulitis_impetigo', 'contact_dermatitis', 'dermatofibroma',
@@ -15,7 +24,7 @@ CLASS_NAMES = [
     'vasculitis', 'viral_infections'
 ]
 
-# Vietnamese disease names mapping (with English in parentheses)
+# Bản đồ tên bệnh tiếng Việt (có tiếng Anh trong ngoặc đơn)
 DISEASE_NAMES_VI = {
     'acne_rosacea': 'Mụn trứng cá & Rosacea (Acne Rosacea)',
     'actinic_keratosis': 'Dày sừng quang hóa - Tiền ung thư (Actinic Keratosis)',
@@ -43,18 +52,18 @@ DISEASE_NAMES_VI = {
     'viral_infections': 'Nhiễm trùng virus - Mụn cóc (Viral Infections)'
 }
 
-# Medical logo emoji for system-wide use
+# Biểu tượng y tế được sử dụng trên toàn hệ thống
 MEDICAL_LOGO = '🏥'
 
-# English disease names (for reference)
+# Tên bệnh tiếng Anh (dùng để tham khảo)
 DISEASE_NAMES_EN = {k: k.replace('_', ' ').title() for k in CLASS_NAMES}
 
-# Risk levels for all 24 disease classes
+# Mức độ rủi ro đối với toàn bộ 24 loại bệnh
 RISK_LEVELS = {
     'acne_rosacea': 'low',
-    'actinic_keratosis': 'medium',  # Pre-cancer
+    'actinic_keratosis': 'medium',  # Tiền ung thư
     'alopecia_hair_loss': 'low',
-    'basal_cell_carcinoma': 'high',  # Cancer
+    'basal_cell_carcinoma': 'high',  # Ung thư
     'bullous_disease_pemphigus': 'medium',
     'cellulitis_impetigo': 'medium',
     'contact_dermatitis': 'low',
@@ -63,13 +72,13 @@ RISK_LEVELS = {
     'exanthems_drug_eruptions': 'medium',
     'fungal_infections': 'low',
     'infestations_bites': 'low',
-    'lupus_connective_tissue': 'high',  # Autoimmune serious
+    'lupus_connective_tissue': 'high',  # Bệnh tự miễn nghiêm trọng
     'melanocytic_nevus': 'low',
-    'melanoma': 'critical',  # Deadly Cancer
+    'melanoma': 'critical',  # Ung thư chết người
     'pigmentation_disorders': 'low',
     'psoriasis_lichen_planus': 'medium',
     'seborrheic_keratosis': 'low',
-    'squamous_cell_carcinoma': 'high',  # Cancer
+    'squamous_cell_carcinoma': 'high',  # Ung thư
     'systemic_disease': 'high',
     'urticaria_hives': 'low',
     'vascular_lesion': 'medium',
@@ -77,7 +86,7 @@ RISK_LEVELS = {
     'viral_infections': 'low'
 }
 
-# Risk level Vietnamese translations
+# Bản đồ dịch thuật mức độ rủi ro sang tiếng Việt
 RISK_LEVEL_VI = {
     'low': 'Thấp',
     'medium': 'Trung bình',
@@ -86,7 +95,7 @@ RISK_LEVEL_VI = {
     'critical': 'Nguy hiểm'
 }
 
-# Medical recommendations in Vietnamese for all 24 disease classes
+# Khuyến nghị y tế bằng tiếng Việt cho toàn bộ 24 loại bệnh
 RECOMMENDATIONS = {
     'acne_rosacea': 'Duy trì vệ sinh da mặt, hạn chế đồ cay nóng. Sử dụng sữa rửa mặt dịu nhẹ.',
     'actinic_keratosis': '⚠️ Tổn thương tiền ung thư. Nên theo dõi và điều trị để tránh tiến triển thành ung thư da.',
@@ -114,10 +123,10 @@ RECOMMENDATIONS = {
     'viral_infections': 'Tăng cường sức đề kháng. Tránh cạy nặn mụn cóc, có thể cần điều trị laser.'
 }
 
-# Color codes for risk levels (for frontend)
+# Mã màu tương ứng cho từng mức độ rủi ro (dùng hiển thị trên UI frontend)
 RISK_COLORS = {
-    'low': '#10b981',      # green
-    'medium': '#f59e0b',   # yellow/orange
-    'high': '#ef4444',     # red
-    'very_high': '#dc2626' # dark red
+    'low': '#10b981',      # xanh lá cây
+    'medium': '#f59e0b',   # vàng/cam
+    'high': '#ef4444',     # đỏ
+    'very_high': '#dc2626' # đỏ thẫm
 }

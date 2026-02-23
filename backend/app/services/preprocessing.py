@@ -1,6 +1,6 @@
 """
-Image preprocessing service
-Handles image validation, resizing, and normalization for model input
+Dịch vụ tiền xử lý ảnh
+Xử lý việc kiểm tra, thay đổi kích thước và chuẩn hóa ảnh cho đầu vào mô hình
 """
 from PIL import Image
 import numpy as np
@@ -14,45 +14,45 @@ from ..config import settings
 
 def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
     """
-    Validate uploaded image file
+    Kiểm tra file ảnh tải lên
     
     Args:
-        file_content: Raw file bytes
-        filename: Original filename
+        file_content: Dữ liệu file (raw bytes)
+        filename: Tên file gốc
         
     Returns:
-        Tuple of (is_valid, error_message)
+        Tuple chứa (is_valid, error_message) - (hợp lệ hay không, thông báo lỗi)
     """
-    # Check file extension
+    # Kiểm tra đuôi mở rộng của file
     extension = filename.lower().split('.')[-1]
     if extension not in settings.ALLOWED_EXTENSIONS:
         return False, f"Định dạng file không hợp lệ. Chỉ chấp nhận: {', '.join(settings.ALLOWED_EXTENSIONS)}"
     
-    # Check file size
+    # Kiểm tra kích thước file
     file_size_mb = len(file_content) / (1024 * 1024)
     if file_size_mb > settings.MAX_IMAGE_SIZE_MB:
         return False, f"File quá lớn. Kích thước tối đa: {settings.MAX_IMAGE_SIZE_MB}MB"
     
-    # Try to open as image
+    # Thử mở file dưới dạng ảnh
     try:
         img = Image.open(io.BytesIO(file_content))
-        img.verify()  # Verify it's actually an image
+        img.verify()  # Xác minh đó thực sự là một file ảnh
         return True, ""
     except Exception as e:
         return False, f"File không phải là ảnh hợp lệ: {str(e)}"
 
 
 
-# Initialize pipeline once to reuse the preprocessing pipeline
+# Khởi tạo pipeline một lần để tái sử dụng quá trình tiền xử lý
 try:
-    # Import directly (PYTHONPATH handles path resolution in Docker and Local)
-    # We rely on PYTHONPATH=/app (Docker) or running from project root (Local)
+    # Import trực tiếp (PYTHONPATH xử lý việc phân giải đường dẫn trong Docker và Local)
+    # Chúng ta dựa vào PYTHONPATH=/app (Docker) hoặc chạy từ thư mục gốc dự án (Local)
     from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
     
     pipeline = HybridPreprocessingPipeline(
         mode='auto',
         target_size=settings.IMAGE_SIZE,
-        device='cpu'  # Use CPU for backend to save resources
+        device='cpu'  # Sử dụng CPU cho backend để tiết kiệm tài nguyên
     )
     PIPELINE_AVAILABLE = True
 except Exception as e:
@@ -62,38 +62,38 @@ except Exception as e:
 
 def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     """
-    Preprocess image for model input using Hybrid Pipeline
+    Tiền xử lý ảnh cho đầu vào mô hình sử dụng Hybrid Pipeline
     
     Args:
-        image_bytes: Raw image bytes
-        return_steps: Whether to return intermediate steps
+        image_bytes: Raw image bytes (ảnh gốc)
+        return_steps: Có trả về các bước trung gian hay không
         
     Returns:
-        If return_steps=False:
-            Preprocessed image array ready for model (shape: (1, 380, 380, 3))
-        If return_steps=True:
+        Nếu return_steps=False:
+            Mảng ảnh đã qua tiền xử lý, sẵn sàng cho mô hình (kích thước: (1, 380, 380, 3))
+        Nếu return_steps=True:
             Tuple (img_array, steps_dict)
     """
-    # Open image
+    # Mở ảnh
     img = Image.open(io.BytesIO(image_bytes))
     
-    # Convert to RGB
+    # Chuyển đổi sang hệ màu RGB
     if img.mode != 'RGB':
         img = img.convert('RGB')
     
-    # Convert to numpy array for pipeline
+    # Chuyển sang mảng numpy cho pipeline
     img_np = np.array(img)
     
     if PIPELINE_AVAILABLE:
         try:
-            # Use the preprocessing pipeline (YOLO auto mask, no manual mask)
+            # Sử dụng pipeline tiền xử lý (YOLO tự động tạo mask, không có mask thủ công)
             if return_steps:
                 result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
                 
-                # Add batch dimension to result
+                # Thêm chiều batch vào kết quả
                 result_batch = np.expand_dims(result, axis=0)
                 
-                # Normalize steps back to 0-255 if they are 0-1
+                # Chuẩn hóa các bước trung gian về 0-255 nếu đang ở dạng 0-1
                 normalized_steps = {}
                 for key, val in steps.items():
                     if val.dtype == np.float32 or val.dtype == np.float64:
@@ -113,16 +113,16 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
         except Exception as e:
             print(f"Hybrid Pipeline failed: {e}. Attempting pure OpenCV fallback.")
             
-            # Fallback to OpenCV pipeline (skips segmentation if no mask, but does Hair Removal)
-            # Use the opencv_pipeline instance inside the hybrid pipeline if available
+            # Dự phòng bằng pipeline OpenCV (bỏ qua segmentation nếu không có mask, nhưng vẫn xóa lông)
+            # Sử dụng instance opencv_pipeline bên trong hybrid pipeline nếu có
             try:
                 if return_steps:
                     result, steps = pipeline.opencv_pipeline.process(img_np, return_steps=True)
                     
-                    # Add batch dimension
+                    # Thêm chiều batch
                     result_batch = np.expand_dims(result, axis=0)
                     
-                    # Normalize steps
+                    # Chuẩn hóa các bước trung gian
                     normalized_steps = {}
                     for key, val in steps.items():
                          if val.dtype == np.float32 or val.dtype == np.float64:
@@ -141,13 +141,13 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
             except Exception as e2:
                 print(f"OpenCV fallback failed: {e2}. Using basic resize.")
     
-    # Ultimate Fallback: Basic Resize
+    # Dự phòng cuối cùng: Thay đổi kích thước (Resize) cơ bản
     img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
     img_array = np.array(img_resized, dtype=np.float32)
-    # img_array = img_array / 255.0 # Check if model needs this
+    # img_array = img_array / 255.0 # Kiểm tra xem mô hình có cần phép tính này không
     
     if return_steps:
-        # Return basic steps for fallback
+        # Trả về các bước trung gian cơ bản cho trường hợp dự phòng
         steps = {
             'original': np.array(img),
             'resized': np.array(img_resized)
@@ -159,20 +159,20 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
 
 async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:
     """
-    Save uploaded image to disk
+    Lưu ảnh đã tải lên vào ổ đĩa cứng
     
     Args:
-        file_content: Raw image bytes
-        diagnosis_id: Unique diagnosis ID
+        file_content: Ảnh dạng byte nguyên thủy
+        diagnosis_id: Định danh duy nhất cho chẩn đoán
         
     Returns:
-        Path to saved image
+        Đường dẫn tới file ảnh đã lưu
     """
-    # Create filename
+    # Tạo tên file
     filename = f"{diagnosis_id}.jpg"
     filepath = settings.UPLOAD_DIR / filename
     
-    # Open and save as JPEG (standard format)
+    # Mở và lưu dưới định dạng JPEG (định dạng chuẩn)
     img = Image.open(io.BytesIO(file_content))
     if img.mode != 'RGB':
         img = img.convert('RGB')

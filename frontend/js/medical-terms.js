@@ -1,15 +1,15 @@
 /**
- * Medical Terminology Dictionary
- * Centralized Vietnamese translations for medical terms
- * Use these constants throughout the application for consistency
+ * Từ Điển Thuật Ngữ Y Khoa
+ * Nơi tập trung các bản dịch tiếng Việt cho các thuật ngữ y học
+ * Sử dụng các hằng số này trên toàn trang ứng dụng để tiện đồng bộ
  * 
- * Updated: All 24 disease classes with Vietnamese (English) format
+ * Cập nhật: Toàn bộ 24 danh mục phân loại bệnh với form Tiếng Việt (Tiếng Anh)
  */
 
-// Medical Logo
+// Biểu tượng Y tế
 export const MEDICAL_LOGO = '🏥';
 
-// Disease Names / Diagnosis (All 24 classes)
+// Tên Bệnh / Kết Cấu Chẩn Đoán (Tất cả 24 loại bệnh)
 export const DISEASE_NAMES = {
     'acne_rosacea': 'Mụn trứng cá & Rosacea (Acne Rosacea)',
     'actinic_keratosis': 'Dày sừng quang hóa - Tiền ung thư (Actinic Keratosis)',
@@ -37,7 +37,7 @@ export const DISEASE_NAMES = {
     'viral_infections': 'Nhiễm trùng virus - Mụn cóc (Viral Infections)'
 };
 
-// Risk Levels
+// Các cấp độ rủi ro
 export const RISK_LEVELS = {
     'critical': 'Nguy hiểm',
     'very_high': 'Rất cao',
@@ -46,7 +46,7 @@ export const RISK_LEVELS = {
     'low': 'Thấp',
 };
 
-// Medical Terms
+// Các thuật ngữ Y tế
 export const MEDICAL_TERMS = {
     'confidence': 'Độ tin cậy',
     'lesion': 'Vùng tổn thương',
@@ -65,7 +65,7 @@ export const MEDICAL_TERMS = {
     'patient': 'Bệnh nhân',
 };
 
-// UI Labels
+// Nhãn giao diện UI
 export const UI_LABELS = {
     'high_risk': 'Nguy cơ cao',
     'medium_risk': 'Nguy cơ trung bình',
@@ -85,7 +85,7 @@ export const UI_LABELS = {
     'success': 'Thành công',
 };
 
-// Recommendations by Risk Level
+// Khuyến nghị dựa theo mức độ Rủi ro
 export const RECOMMENDATIONS = {
     'critical': {
         title: 'Cần khẩn cấp',
@@ -109,7 +109,7 @@ export const RECOMMENDATIONS = {
     },
 };
 
-// Error Messages
+// Các thông báo lỗi
 export const ERROR_MESSAGES = {
     'upload_failed': 'Tải ảnh lên thất bại. Vui lòng thử lại.',
     'analysis_failed': 'Phân tích thất bại. Vui lòng thử lại.',
@@ -119,7 +119,7 @@ export const ERROR_MESSAGES = {
     'server_error': 'Lỗi máy chủ. Vui lòng thử lại sau.',
 };
 
-// Success Messages
+// Các thông báo thành công
 export const SUCCESS_MESSAGES = {
     'upload_success': 'Tải ảnh lên thành công!',
     'analysis_complete': 'Phân tích hoàn tất!',
@@ -127,13 +127,13 @@ export const SUCCESS_MESSAGES = {
 };
 
 /**
- * Helper Functions
+ * Các hàm hỗ trợ / bổ trợ (Helpers Func)
  */
 
 /**
- * Translate disease name to Vietnamese
- * @param {string} diseaseCode - Disease code from API
- * @returns {string} Vietnamese disease name with English in parentheses
+ * Dịch tên bệnh chẩn đoán sang tiếng Việt
+ * @param {string} diseaseCode - Nhóm Mã bệnh từ API
+ * @returns {string} Trả về tên bệnh bằng Tiếng Việt đi kèm ngoặc đơn tiếng Anh
  */
 export function translateDiseaseName(diseaseCode) {
     const code = diseaseCode.toLowerCase().replace(/\s+/g, '_');
@@ -141,9 +141,9 @@ export function translateDiseaseName(diseaseCode) {
 }
 
 /**
- * Translate risk level to Vietnamese
- * @param {string} riskLevel - Risk level from API
- * @returns {string} Vietnamese risk level
+ * Dịch danh mục đánh giá mức độ rủi ro sang tiếng Việt
+ * @param {string} riskLevel - Cấp độ bị ảnh hưởng từ API
+ * @returns {string} Cấp độ rủi ro theo Tiếng Việt
  */
 export function translateRiskLevel(riskLevel) {
     const level = riskLevel.toLowerCase();
@@ -151,9 +151,9 @@ export function translateRiskLevel(riskLevel) {
 }
 
 /**
- * Get recommendation by risk level
- * @param {string} riskLevel - Risk level
- * @returns {object} Recommendation object with title and description
+ * Nhận lời khuyên đánh giá dựa trên mức độ rủi ro
+ * @param {string} riskLevel - Cấp độ rủi ro
+ * @returns {object} Trả về Đối tượng Khuyến nghị gồm có title(tiêu đề) và description(mô tả phân tích)
  */
 export function getRecommendation(riskLevel) {
     const level = riskLevel.toLowerCase();
@@ -161,9 +161,9 @@ export function getRecommendation(riskLevel) {
 }
 
 /**
- * Translate medical term to Vietnamese
- * @param {string} term - Medical term
- * @returns {string} Vietnamese translation
+ * Dịch từ vựng cụm thuật ngữ biểu nghĩa Y khoa sang Tiếng Việt
+ * @param {string} term - Thuật ngữ Y khoa
+ * @returns {string} Bản dịch hoàn chỉnh
  */
 export function translateMedicalTerm(term) {
     const normalizedTerm = term.toLowerCase().replace(/\s+/g, '_');

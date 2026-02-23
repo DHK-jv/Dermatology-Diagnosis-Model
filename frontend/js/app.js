@@ -1,39 +1,39 @@
 /**
- * Core App Logic
- * Navigation, theme toggle, and shared functionality
+ * Logic Cốt Lõi Của App
+ * Điều hướng, chuyển giao diện, và các chức năng dùng chung
  */
 
-// Initialize app when DOM is loaded
+// Khởi tạo app khi trang HTML (DOM) đã được tải xong
 document.addEventListener('DOMContentLoaded', function () {
     console.log('MedAI Frontend initialized');
 
-    // Setup navigation
+    // Thiết lập điều hướng
     setupNavigation();
 
-    // Setup theme toggle (if exists)
+    // Thiết lập nút chuyển giao diện (nếu có)
     setupThemeToggle();
 
-    // Check backend health
+    // Kiểm tra kết nối tới backend
     checkBackendHealth();
 });
 
 /**
- * Setup navigation handlers
+ * Cài đặt các trình xử lý điều hướng
  */
 function setupNavigation() {
-    // Get all navigation links
+    // Lấy tất cả các thẻ liên kết điều hướng
     const navLinks = document.querySelectorAll('a[href]');
 
     navLinks.forEach(link => {
         const href = link.getAttribute('href');
 
-        // Update relative links to work with project structure
+        // Cập nhật các liên kết tương đối để hoạt động khớp với cấu trúc thư mục của dự án
         if (href && !href.startsWith('http') && !href.startsWith('#')) {
-            // Make sure links work from different page levels
+            // Đảm bảo các liên kết hoạt động tốt từ các cấp độ thư mục khác nhau
             if (href.startsWith('pages/')) {
-                // Already correct from index.html
+                // Đã chính xác nếu dùng từ file index.html
             } else if (href === 'index.html' || href === '/') {
-                // Going back to index from pages
+                // Quay trở lại trang chủ index từ thư mục con (pages)
                 const currentPath = window.location.pathname;
                 if (currentPath.includes('/pages/')) {
                     link.setAttribute('href', '../index.html');
@@ -44,18 +44,18 @@ function setupNavigation() {
 }
 
 /**
- * Setup theme toggle functionality
+ * Thiết lập tính năng chuyển đổi giao diện sáng/tối
  */
 function setupThemeToggle() {
     const themeToggle = document.getElementById('theme-toggle');
 
     if (!themeToggle) return;
 
-    // Check saved theme preference
+    // Kiểm tra cấu hình giao diện đã được lưu vào máy
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.classList.toggle('dark', currentTheme === 'dark');
 
-    // Toggle theme on click
+    // Chuyển đổi giao diện khi nhấn chuột vào nút
     themeToggle.addEventListener('click', () => {
         const isDark = document.documentElement.classList.toggle('dark');
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -63,7 +63,7 @@ function setupThemeToggle() {
 }
 
 /**
- * Check backend API health
+ * Kiểm tra sức khỏe của API Backend
  */
 async function checkBackendHealth() {
     try {
@@ -91,21 +91,21 @@ async function checkBackendHealth() {
 }
 
 /**
- * Navigate to a page with optional state
- * @param {string} url - Page URL
- * @param {object} state - State object to pass
+ * Điều hướng tới một trang mới cùng với trạng thái (state) truyền kèm theo
+ * @param {string} url - Đường dẫn URL của trang web
+ * @param {object} state - Biến trạng thái để truyền sang trang kia
  */
 function navigateTo(url, state = {}) {
     if (Object.keys(state).length > 0) {
-        // Store state for next page
+        // Lưu trữ lại biến trạng thái cho trang tiếp theo sử dụng
         sessionStorage.setItem('navigationState', JSON.stringify(state));
     }
     window.location.href = url;
 }
 
 /**
- * Get navigation state from previous page
- * @returns {object} State object or null
+ * Đọc thuộc tính trạng thái (state) được đẩy từ trang trước sang
+ * @returns {object} Trả về đối tượng trạng thái hoặc Null
  */
 function getNavigationState() {
     try {

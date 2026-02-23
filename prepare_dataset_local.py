@@ -77,7 +77,8 @@ DERMNET_MAPPING = {
     "pigment": "pigmentation_disorders",
     "lupus": "lupus_connective_tissue",
     "connective": "lupus_connective_tissue",
-    "nail": "fungal_infections",  # FIXED: was nail_fungus_nail_disease
+    "nail": "fungal_infections",
+
     "fungus": "fungal_infections",
     "tinea": "fungal_infections",
     "psoriasis": "psoriasis_lichen_planus",
