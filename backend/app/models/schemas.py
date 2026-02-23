@@ -50,6 +50,7 @@ class PredictionResponse(BaseModel):
     all_predictions: Dict[str, float] = Field(..., description="Tất cả xác suất dự đoán của các loại bệnh")
     recommendations: Dict = Field(..., description="Khuyến nghị y tế")
     timestamp: datetime = Field(default_factory=datetime.now, description="Thời gian dự đoán")
+    has_feedback: bool = Field(default=False, description="Cờ xác nhận kết quả này đã từng nhận được phản hồi hay chưa")
     
     def __init__(self, **data):
         """Khởi tạo và tự động tính toán confidence_percent nếu thiếu"""
@@ -79,7 +80,8 @@ class PredictionResponse(BaseModel):
                     "actions": ["Theo dõi thường xuyên..."],
                     "urgency": "Không cấp thiết"
                 },
-                "timestamp": "2026-01-27T03:30:00"
+                "timestamp": "2026-01-27T03:30:00",
+                "has_feedback": False
             }
         }
 
@@ -94,6 +96,7 @@ class DiagnosisHistory(BaseModel):
     risk_level_vi: str
     timestamp: datetime
     image_filename: Optional[str] = None
+    has_feedback: bool = Field(default=False)
     
     class Config:
         json_schema_extra = {
@@ -105,7 +108,8 @@ class DiagnosisHistory(BaseModel):
                 "risk_level": "low",
                 "risk_level_vi": "Thấp",
                 "timestamp": "2026-01-27T03:30:00",
-                "image_filename": "upload_001.jpg"
+                "image_filename": "upload_001.jpg",
+                "has_feedback": False
             }
         }
 
@@ -127,7 +131,8 @@ class HistoryListResponse(BaseModel):
                         "confidence": 0.984,
                         "risk_level": "low",
                         "risk_level_vi": "Thấp",
-                        "timestamp": "2026-01-27T03:30:00"
+                        "timestamp": "2026-01-27T03:30:00",
+                        "has_feedback": True
                     }
                 ]
             }

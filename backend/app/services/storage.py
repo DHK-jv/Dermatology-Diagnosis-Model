@@ -216,7 +216,14 @@ class StorageService:
         if self.use_mongodb:
             try:
                 feedback_collection = self.db.feedback
-                await feedback_collection.insert_one(feedback)
+                feedback_collection.insert_one(feedback)
+                
+                # Cập nhật chẩn đoán gốc để trỏ cờ báo đã có đánh giá
+                self.collection.update_one(
+                    {"diagnosis_id": feedback["diagnosis_id"]},
+                    {"$set": {"has_feedback": True}}
+                )
+                
                 logger.info(f"Saved feedback for {feedback['diagnosis_id']} to MongoDB")
                 return True
             except Exception as e:
@@ -235,6 +242,14 @@ class StorageService:
                 
                 with open(feedback_file, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+                
+                # Cập nhật trong file JSON lịch sử chẩn đoán
+                diagnoses = self._read_json_file()
+                for d in diagnoses:
+                    if d.get("diagnosis_id") == feedback["diagnosis_id"]:
+                        d["has_feedback"] = True
+                        break
+                self._write_json_file(diagnoses)
                     
                 logger.info(f"Saved feedback for {feedback['diagnosis_id']} to JSON")
                 return True

@@ -126,6 +126,23 @@ function displayDiagnosisResult(diagnosis) {
 
     // Cập nhật danh sách tất cả các chẩn đoán thuộc nhánh bệnh nguy cơ liên đới khác
     updateAllPredictions(diagnosis.all_predictions);
+
+    // Kiểm tra trạng thái phản hồi để ẩn/hiện form
+    const formContainer = document.getElementById('feedback-form');
+    const successMsg = document.getElementById('feedback-success');
+    if (formContainer && successMsg) {
+        if (diagnosis.has_feedback) {
+            formContainer.classList.add('hidden');
+            successMsg.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Đánh giá của bạn đã được ghi nhận trước đó.';
+            successMsg.classList.remove('hidden');
+            successMsg.classList.add('flex');
+        } else {
+            formContainer.classList.remove('hidden');
+            successMsg.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Cảm ơn bạn đã đóng góp! Phản hồi đã được ghi nhận.';
+            successMsg.classList.add('hidden');
+            successMsg.classList.remove('flex');
+        }
+    }
 }
 
 /**
