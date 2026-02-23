@@ -114,6 +114,17 @@
                             <p class="text-sm text-[#5e758d] dark:text-gray-400 mt-1" data-disease-name-en>Loading...
                             </p>
                         </div>
+
+                        <!-- Critical Warning Banner (Hidden by default) -->
+                        <div id="critical-warning-banner"
+                            class="hidden animate-pulse mt-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3 inline-flex items-center gap-2 text-red-700 dark:text-red-400">
+                            <span class="material-symbols-outlined text-lg">warning</span>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold uppercase tracking-wider">Cảnh báo Cấp thiết</span>
+                                <span class="text-sm font-medium" id="critical-warning-text"></span>
+                            </div>
+                        </div>
+
                         <p class="text-sm text-[#5e758d] dark:text-gray-400 max-w-lg" data-recommendation-description>
                             Đang tải thông tin...
                         </p>
@@ -357,10 +368,10 @@
     <!-- JavaScript Files -->
     <script type="module" src="../js/medical-terms.js?v=24classes"></script>
     <script src="../js/config.js"></script>
-    <script src="../js/utils.js"></script>
+    <script src="../js/utils.js?v=6"></script>
     <script src="../js/auth.js?v=3"></script>
     <script src="../js/app.js"></script>
-    <script type="module" src="../js/result.js?v=24classes"></script>
+    <script type="module" src="../js/result.js?v=2"></script>
     </body>
 
 </html>

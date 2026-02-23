@@ -143,6 +143,18 @@ function displayDiagnosisResult(diagnosis) {
             successMsg.classList.remove('flex');
         }
     }
+
+    // Hiển thị dải băng cảnh báo bệnh nguy hiểm (nếu có)
+    const criticalBanner = document.getElementById('critical-warning-banner');
+    const criticalText = document.getElementById('critical-warning-text');
+    if (criticalBanner && criticalText) {
+        if (diagnosis.critical_warning) {
+            criticalText.textContent = `Dấu hiệu của ${diagnosis.critical_warning.name_vi} (${(diagnosis.critical_warning.confidence * 100).toFixed(1)}%)`;
+            criticalBanner.classList.remove('hidden');
+        } else {
+            criticalBanner.classList.add('hidden');
+        }
+    }
 }
 
 /**
@@ -374,15 +386,33 @@ async function loadGradCAM(diagnosis) {
     errorEl.classList.add('hidden');
 
     try {
-        // Cố tìm kiếm bốc lại bức tấm ảnh gốc của người dùng được lưu trong ngăn Session hồi đầu upload
-        const imageDataUrl = sessionStorage.getItem('lastUploadedImage');
-        if (!imageDataUrl) {
-            throw new Error('Không tìm thấy ảnh gốc trong session');
-        }
+        let file = null;
+        let imageDataUrl = null;
 
-        // Thay đổi kiểu chuỗi dataURL base64 → ra Blob memory → đẩy về File system ảo
-        const blob = dataURLtoBlob(imageDataUrl);
-        const file = new File([blob], 'image.jpg', { type: blob.type });
+        // 1. Cố tìm kiếm bốc lại bức tấm ảnh gốc của người dùng được lưu trong ngăn Session hồi đầu upload
+        imageDataUrl = sessionStorage.getItem(`recentImage_${diagnosis.diagnosis_id}`);
+
+        if (imageDataUrl) {
+            // Thay đổi kiểu chuỗi dataURL base64 → ra Blob memory → đẩy về File system ảo
+            const blob = dataURLtoBlob(imageDataUrl);
+            file = new File([blob], 'image.jpg', { type: blob.type });
+        } else if (diagnosis.image_filename) {
+            // 2. Chế độ Xem Lịch Sử (History Mode): Download ảnh gốc từ Server backend
+            const imageUrl = API_CONFIG.BASE_URL.replace('/api/v1', '') + '/uploads/' + diagnosis.image_filename;
+            const res = await fetch(imageUrl);
+            if (!res.ok) throw new Error('Không thể tải ảnh gốc cũ từ lịch sử');
+            const blob = await res.blob();
+            file = new File([blob], diagnosis.image_filename, { type: blob.type });
+
+            // Xây dựng dataUrl để chèn hiển thị ảnh gốc trong thẻ <img> phía dưới
+            imageDataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+        } else {
+            throw new Error('Không có hình ảnh để vẽ GradCAM');
+        }
 
         // Thi công truyền nạp bộ FormData API payload request
         const formData = new FormData();
@@ -391,11 +421,15 @@ async function loadGradCAM(diagnosis) {
             formData.append('target_class', diagnosis.predicted_class);
         }
 
-        // Chạy thẳng gọi GradCAM server trigger endpoint
+        // Chạy gọi apiCall (có bao gồm token đăng nhập nếu có)
         const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.GRADCAM;
         const response = await fetch(url, {
             method: 'POST',
-            body: formData
+            body: formData,
+            // Thêm Authorization header nếu cần thiết (dù GradCAM endpoint hiện tại có thể không yêu cầu)
+            headers: localStorage.getItem('access_token') ? {
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            } : {}
         });
 
         if (!response.ok) {

@@ -404,7 +404,7 @@ async function runDiagnosis() {
         // Lưu lại hình khối base64 của bức hình Gốc (phục hồi cho vẽ Overlay xử lý GradCAM ở trang result)
         if (previewImage) {
             try {
-                sessionStorage.setItem('lastUploadedImage', previewImage);
+                sessionStorage.setItem(`recentImage_${result.diagnosis_id}`, previewImage);
             } catch (e) {
                 console.warn('Could not save image to sessionStorage (too large?):', e);
             }

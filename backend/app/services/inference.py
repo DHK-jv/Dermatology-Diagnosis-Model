@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import transforms, models
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import logging
 
 from ..config import settings
@@ -81,7 +81,7 @@ class ModelInference:
             # Đừng ném lỗi Exception ở đây, hãy để nó ném lỗi lúc đang chạy dự đoán (predict)
             # hoặc lúc /health status, để server FastAPI vẫn có thể khởi động lên được
     
-    def predict(self, image_array: np.ndarray) -> Tuple[str, float, Dict[str, float]]:
+    def predict(self, image_array: np.ndarray) -> Tuple[str, float, Dict[str, float], Optional[Dict]]:
         """
         Chạy dự đoán trên ảnh đã tiền xử lý
         
@@ -89,7 +89,7 @@ class ModelInference:
             image_array: Mảng ảnh numpy đã preprocess (1, 380, 380, 3) - Giá trị 0-255 float/uint8
             
         Returns:
-            Tuple (Lớp bệnh dự đoán được, độ tin cậy, từ điển xác suất của mọi lớp)
+            Tuple (Lớp bệnh dự đoán được, độ tin cậy, từ điển xác suất của mọi lớp, cảnh báo bệnh nguy hiểm (nếu có))
         """
         if self._model is None:
             self.load_model()
@@ -139,10 +139,11 @@ class ModelInference:
             )
             
             # --- LOGIC ĐIỀU CHỈNH NGƯỠNG RỦI RO CẤP BÁCH ---
-            from ..utils.constants import CRITICAL_DISEASE_THRESHOLDS
+            from ..utils.constants import CRITICAL_DISEASE_THRESHOLDS, DISEASE_NAMES_VI
             
             highest_crit_prob = 0.0
             highest_crit_class = None
+            critical_warning = None
             
             for crit_class, threshold in CRITICAL_DISEASE_THRESHOLDS.items():
                 if crit_class in all_predictions and all_predictions[crit_class] >= threshold:
@@ -150,12 +151,16 @@ class ModelInference:
                         highest_crit_prob = all_predictions[crit_class]
                         highest_crit_class = crit_class
             
+            # NẾU CÓ BỆNH NGUY HIỂM và Bệnh đó không phải là top 1 hiện tại
             if highest_crit_class and highest_crit_class != predicted_class:
-                predicted_class = highest_crit_class
-                confidence = highest_crit_prob
+                critical_warning = {
+                    "class": highest_crit_class,
+                    "confidence": highest_crit_prob,
+                    "name_vi": DISEASE_NAMES_VI.get(highest_crit_class, highest_crit_class)
+                }
                 logger.warning(
-                    f"CRITICAL WARNING OVERRIDE: {predicted_class} triggered at "
-                    f"{confidence:.2f} (Threshold: {CRITICAL_DISEASE_THRESHOLDS[predicted_class]})"
+                    f"CRITICAL WARNING CREATED: {highest_crit_class} triggered at "
+                    f"{highest_crit_prob:.2f} (Threshold: {CRITICAL_DISEASE_THRESHOLDS[highest_crit_class]})"
                 )
             
             logger.info(
@@ -163,7 +168,7 @@ class ModelInference:
                 f"(confidence: {confidence:.3f})"
             )
             
-            return predicted_class, confidence, all_predictions
+            return predicted_class, confidence, all_predictions, critical_warning
             
         except Exception as e:
             logger.error(f"Prediction error: {str(e)}")

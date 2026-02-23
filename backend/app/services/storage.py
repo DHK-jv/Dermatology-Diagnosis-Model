@@ -129,7 +129,9 @@ class StorageService:
                         risk_level=r["risk_level"],
                         risk_level_vi=r["risk_level_vi"],
                         timestamp=datetime.fromisoformat(r["timestamp"]) if isinstance(r["timestamp"], str) else r["timestamp"],
-                        image_filename=r.get("image_filename")
+                        image_filename=r.get("image_filename"),
+                        critical_warning=r.get("critical_warning"),
+                        has_feedback=r.get("has_feedback", False)
                     )
                     for r in records
                 ]
@@ -158,7 +160,9 @@ class StorageService:
                         risk_level=r["risk_level"],
                         risk_level_vi=r["risk_level_vi"],
                         timestamp=datetime.fromisoformat(r["timestamp"]) if isinstance(r["timestamp"], str) else r["timestamp"],
-                        image_filename=r.get("image_filename")
+                        image_filename=r.get("image_filename"),
+                        critical_warning=r.get("critical_warning"),
+                        has_feedback=r.get("has_feedback", False)
                     )
                     for r in data
                 ]

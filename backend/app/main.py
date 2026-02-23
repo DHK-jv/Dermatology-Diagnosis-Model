@@ -229,7 +229,7 @@ async def predict(
         
         # Chạy AI dự đoán
         logger.info(f"Running AI prediction for {diagnosis_id}")
-        predicted_class, confidence, all_predictions = model_service.predict(preprocessed_img)
+        predicted_class, confidence, all_predictions, critical_warning = model_service.predict(preprocessed_img)
         
         # Lấy thông tin bệnh lý
         disease_name_vi = DISEASE_NAMES_VI.get(predicted_class, "Không xác định")
@@ -257,6 +257,7 @@ async def predict(
             risk_level_vi=risk_level_vi,
             all_predictions=all_predictions,
             recommendations=recommendations,
+            critical_warning=critical_warning,
             timestamp=datetime.now()
         )
         
