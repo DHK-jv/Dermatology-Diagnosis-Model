@@ -220,6 +220,13 @@ class StorageService:
         if self.use_mongodb:
             try:
                 feedback_collection = self.db.feedback
+                
+                # Kiểm tra tránh lưu trùng lặp nhiều lần phản hồi cho cùng 1 id
+                existing = feedback_collection.find_one({"diagnosis_id": feedback["diagnosis_id"]})
+                if existing:
+                    logger.warning(f"Feedback already exists for {feedback['diagnosis_id']}, ignoring duplicate.")
+                    return True
+                
                 feedback_collection.insert_one(feedback)
                 
                 # Cập nhật chẩn đoán gốc để trỏ cờ báo đã có đánh giá
@@ -242,6 +249,12 @@ class StorageService:
                 with open(feedback_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
+                # Kiểm tra tránh trùng lặp
+                for item in data:
+                    if item.get("diagnosis_id") == feedback.get("diagnosis_id"):
+                        logger.warning(f"Feedback already exists in JSON for {feedback['diagnosis_id']}, ignoring.")
+                        return True
+                        
                 data.append(feedback)
                 
                 with open(feedback_file, 'w', encoding='utf-8') as f:
