@@ -545,8 +545,20 @@ function setupFeedback() {
             hideLoader();
             // Sau thành công hãy Ẩn rấp form phản hồi, hiện thông báo text báo cảm tạ User
             formContainer.classList.add('hidden');
+            successMsg.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Cảm ơn bạn đã đóng góp! Phản hồi đã được ghi nhận.';
             successMsg.classList.remove('hidden');
             successMsg.classList.add('flex');
+
+            // Cập nhật lại cờ feedback trong localStorage để lần sau xem lại không bị hỏi lại
+            const cachedDiag = retrieve('latestDiagnosis');
+            if (cachedDiag && cachedDiag.diagnosis_id === currentDiagnosis.diagnosis_id) {
+                cachedDiag.has_feedback = true;
+                store('latestDiagnosis', cachedDiag);
+            }
+
+            // Đánh dấu cờ trên object hiện tại
+            currentDiagnosis.has_feedback = true;
+
         } catch (error) {
             hideLoader();
             console.error('Feedback error:', error);

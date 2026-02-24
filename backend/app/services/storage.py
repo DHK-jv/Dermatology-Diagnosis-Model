@@ -78,8 +78,10 @@ class StorageService:
             "risk_level_vi": prediction.risk_level_vi,
             "all_predictions": prediction.all_predictions,
             "recommendations": prediction.recommendations,
+            "critical_warning": prediction.critical_warning,
             "timestamp": prediction.timestamp.isoformat(),
-            "image_filename": f"{prediction.diagnosis_id}.jpg"
+            "image_filename": f"{prediction.diagnosis_id}.jpg",
+            "has_feedback": getattr(prediction, 'has_feedback', False)
         }
         
         if self.use_mongodb:

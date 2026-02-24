@@ -15,10 +15,10 @@ async function apiCall(url, options = {}) {
 
     try {
         // Chuẩn bị header và nhét token xác thực vào nếu có tồn tại
-        const headers = new Headers(options.headers || {});
+        const headers = { ...options.headers };
         const token = localStorage.getItem('access_token');
         if (token) {
-            headers.set('Authorization', `Bearer ${token}`);
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         // Ngăn chặn việc vô ý ghi đè các cấu hình config cũ

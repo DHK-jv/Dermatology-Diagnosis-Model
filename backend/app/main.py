@@ -2,7 +2,7 @@
 Ứng dụng FastAPI chính
 MedAI Dermatology - Backend API chẩn đoán tổn thương da
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, status
+from fastapi import FastAPI, File, UploadFile, HTTPException, status, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -102,10 +102,18 @@ async def get_current_user_optional(token: str = Depends(oauth2_scheme_optional)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("username")
         if username is None:
-            return None
-        return await storage_service.get_user_by_username(username=username)
-    except JWTError:
-        return None
+            logger.warning("Token provided but no username in payload")
+            raise HTTPException(status_code=401, detail="Token không hợp lệ")
+        
+        user = await storage_service.get_user_by_username(username=username)
+        if user is None:
+            logger.warning(f"User {username} from token not found in database")
+            raise HTTPException(status_code=401, detail="User không tồn tại")
+            
+        return user
+    except JWTError as e:
+        logger.warning(f"JWT decode error: {e}")
+        raise HTTPException(status_code=401, detail="Phiên đăng nhập đã hết hạn")
 
 
 @app.post(f"{settings.API_V1_PREFIX}/auth/register", response_model=UserResponse, tags=["Auth"])
@@ -196,6 +204,7 @@ async def health_check():
     description="Upload ảnh da để AI phân tích và đưa ra chẩn đoán bệnh"
 )
 async def predict(
+    request: Request,
     file: UploadFile = File(..., description="Ảnh da cần chẩn đoán"),
     current_user: dict = Depends(get_current_user_optional)
 ):
@@ -207,6 +216,10 @@ async def predict(
     Returns thông tin dự đoán với độ tin cậy và khuyến nghị y tế
     """
     try:
+        logger.info(f"--- INCOMING HEADERS for /api/v1/predict ---")
+        for k, v in request.headers.items():
+            logger.info(f"{k}: {v}")
+        logger.info(f"--------------------------------------------")
         # Đọc nội dung file
         file_content = await file.read()
         
@@ -584,7 +597,7 @@ async def gradcam(
             predicted_class_name = target_class
         else:
             # Để GradCAM sử dụng kết quả dự đoán của AI nếu không chọn
-            predicted_class_name, _, _ = model_service.predict(preprocessed_img)
+            predicted_class_name, _, _, _ = model_service.predict(preprocessed_img)
             class_idx = CLASS_NAMES.index(predicted_class_name)
 
         logger.info(f"GradCAM: generating for class '{predicted_class_name}' (idx={class_idx})")
