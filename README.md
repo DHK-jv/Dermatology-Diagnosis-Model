@@ -5,42 +5,24 @@
 
 ---
 
-## 📊 Tổng quan
+## PHẦN MỞ ĐẦU
 
-Một hệ thống AI chẩn đoán bệnh da liễu sử dụng các kỹ thuật học sâu (deep learning) và xử lý ảnh y tế tiên tiến. Hệ thống tích hợp các luồng tiền xử lý (preprocessing) chuyên nghiệp và mô hình mạng nơ-ron hiện đại để hỗ trợ các bác sĩ trong việc chẩn đoán.
+### 1. Tính cấp thiết và Giới thiệu tổng quan
+Một hệ thống AI chẩn đoán bệnh da liễu sử dụng các kỹ thuật học sâu (deep learning) và xử lý ảnh y tế tiên tiến. Hệ thống tích hợp các luồng tiền xử lý (preprocessing) chuyên nghiệp và mô hình mạng nơ-ron hiện đại để hỗ trợ các bác sĩ trong việc chẩn đoán, giảm thiểu sai sót và tăng tốc độ chẩn đoán ban đầu.
 
-**Các thành tựu chính:**
-- ✅ **Bộ dữ liệu (Dataset):** ~41.000 ảnh (DermNet NZ + ISIC 2019 + PAD-UFES-20)
-- ✅ **Tiền xử lý (Preprocessing):** Luồng tự động (Cắt phân đoạn bằng YOLOv8 + Xóa lông + Kiểm soát chất lượng)
-- ✅ **Mô hình (Model):** EfficientNet-B4 V2.1 (Độ chính xác được xác thực với validation accuracy đạt 86,2%, F1 0,880)
-- ✅ **Hệ thống:** Ứng dụng Full-stack với backend dùng FastAPI và frontend web
-- ✅ **Phân loại:** 24 loại bệnh da liễu
-
----
-
-## 🚀 Bắt đầu nhanh
-
-```bash
-git clone https://github.com/DHK-jv/Dermatology-Diagnosis-Model.git
-cd Dermatology-Diagnosis-Model
-python run.py
-```
-
-Hệ thống sẽ tự khởi động tại địa chỉ: http://localhost:8080
+### 2. Mục tiêu và Những đóng góp của dự án
+- ✅ **Bộ dữ liệu (Dataset):** Xây dựng tập dữ liệu ~41.000 ảnh (DermNet NZ + ISIC 2019 + PAD-UFES-20).
+- ✅ **Tiền xử lý (Preprocessing):** Xây dựng luồng tự động (Cắt phân đoạn bằng YOLOv8 + Xóa lông + Kiểm soát chất lượng).
+- ✅ **Mô hình (Model):** Tối ưu hóa mô hình EfficientNet-B4 V2.1 (Độ chính xác được xác thực với validation accuracy đạt 86,2%, F1 0,880).
+- ✅ **Hệ thống:** Phát triển Web App Full-stack với backend dùng FastAPI và frontend web để đưa mô hình vào ứng dụng thực tế.
+- ✅ **Khả năng Phân loại:** Hỗ trợ chẩn đoán chính xác 24 loại bệnh da liễu.
 
 ---
 
-## 🤖 Tải mô hình
+## CHƯƠNG 1: TỔNG QUAN VỀ CHẨN ĐOÁN BỆNH DA LIỄU VỚI HỌC SÂU
 
-Trọng số của mô hình (Model weights) **không được kèm theo** trong kho lưu trữ này (do kích thước quá lớn). Vui lòng tải xuống thủ công trước khi chạy:
-
-1. **Tải xuống:** `efficientnet_b4_derma_v2_1_finetuned.pth` (71MB)
-    Link drive: https://drive.google.com/file/d/1O4QKvJgp8FxHhzz8KSM-Gs0xv3aR57-y/view?usp=drive_link
-2. **Gắn vào thư mục:** `backend/ml_models/efficientnet_b4_derma_v2_1_finetuned.pth`
-
----
-
-## 🏥 Các bệnh hỗ trợ (24 Nhóm)
+### 1.1 Bài toán phân loại bệnh da liễu
+Danh sách 24 nhóm bệnh lý về da liễu được hệ thống hỗ trợ phân lớp và chẩn đoán:
 
 | Tên Tiếng Việt | Tên Tiếng Anh | Mức độ Nguy hiểm |
 |-----------|---------|------|
@@ -71,161 +53,90 @@ Trọng số của mô hình (Model weights) **không được kèm theo** trong
 
 ---
 
-## 📁 Cấu trúc thư mục dự án
+## CHƯƠNG 2: PHƯƠNG PHÁP VÀ KIẾN TRÚC HỆ THỐNG ĐỀ XUẤT
 
-```
+### 2.1 Cấu trúc và các thành phần của hệ thống
+Hệ thống được thiết kế theo kiến trúc Microservices cơ bản, quản lý riêng biệt phần AI, Backend, Frontend:
+
+```text
 MedAI_Dermatology/
 │
-├── 📂 backend/                      # Hệ thống Backend (FastAPI)
+├── 📂 backend/                      # Hệ thống Backend API (FastAPI)
 │   ├── app/
-│   │   ├── models/                  # Các schema của Pydantic 
-│   │   ├── services/                # Xử lý Logic chính
-│   │   │   ├── gradcam.py           # Giải mã quyết định (Heatmap)
-│   │   │   ├── inference.py         # Chạy AI suy luận
-│   │   │   ├── preprocessing.py     # Tiền xử lý ảnh
-│   │   │   ├── security.py          # Bảo mật JWT, Hashing
-│   │   │   └── storage.py           # Lưu trữ dữ liệu DB
-│   │   ├── utils/
-│   │   │   └── constants.py         # Các file config và mapping tên bệnh
-│   │   ├── config.py                # File cấu hình toàn hệ thống
-│   │   └── main.py                  # Các endpoint API
-│   │
-│   ├── ml_models/                   # Mô hình AI
-│   │   ├── efficientnet_b4_derma_v2_1_finetuned.pth    # Mô hình phân loại chính (V2.1)
-│   │   └── yolov8n-seg.pt           # Mô hình cắt phân đoạn ảnh
-│   │
-│   └── uploads/                     # Thư mục lưu file tạm
+│   │   ├── services/                # Logic chính (inference.py, preprocessing.py, gradcam.py)
+│   ├── ml_models/                   # Chứa trọng số AI (efficientnet, yolov8)
 │
-├── 📂 frontend/                     # Giao diện người dùng Web
-│   ├── assets/                      # Hình ảnh, logo
-│   ├── css/                         # File định dạng CSS
-│   ├── js/                          # JavaScript
-│   │   ├── admin.js                 # Quản trị viên Dashboard
-│   │   ├── api.js                   # Kết nối API Backend
-│   │   ├── app.js                   # Logic app chính
-│   │   ├── auth.js                  # Cơ chế đăng nhập/đăng ký
-│   │   ├── config.js                # Cấu hình biến Web
-│   │   ├── diagnose.js              # Luồng giao diện lúc chẩn đoán
-│   │   ├── history.js               # Logic trang lịch sử
-│   │   ├── medical-terms.js         # File từ vựng dịch từ Anh sang Việt
-│   │   ├── result.js                # Luồng in kết quả
-│   │   └── utils.js                 # Hàm tiện ích chung
-│   ├── pages/                       # Các trang HTML
-│   │   ├── admin.html               # Bảng bảng Dashboard Admin
-│   │   ├── diagnose.html            # Trang màn chẩn đoán
-│   │   ├── history.html             # Trang xem lịch sử
-│   │   └── result.html              # Trang kết quả
-│   └── index.html                   # Trang chủ (Landing page)
+├── 📂 frontend/                     # Giao diện Web (HTML/CSS/JS)
+│   ├── js/                          # Logic hiển thị và kết nối API 
+│   ├── pages/                       # Bố cục giao diện Dashboard, Diagnose
 │
-├── 📂 preprocessing/                # Đoạn mã gốc xử lý ảnh
-│   ├── hybrid_pipeline.py           # Luồng xử lý dữ liệu hỗn hợp chính
-│   └── yolo_segmentor.py            # Hàm xử lý YOLO 
-│
-├── 📂 research/                     # Nghiên cứu và Huấn luyện AI
-│   ├── notebooks/
-│   │   ├── kaggle-train.ipynb       # Notebook train chính trên Kaggle
-│   └── reports/                     # Báo cáo sau quá trình train
-│
-├── 📂 data/                         # Bộ dữ liệu ban đầu
-│   ├── raw/                         # Ảnh thô chưa qua làm sạch
-│   │   ├── dermnet/                 # Nguồn DermNet NZ
-│   │   ├── isic_2019/               # Nguồn ISIC 2019
-│   │   └── pad_ufes/                # Nguồn PAD-UFES-20
-│   └── processed/                   # Dữ liệu đã làm sạch
-│       ├── train/                   # Tập Train (~33k ảnh)
-│       └── val/                     # Tập Validation (~8k ảnh)
-│
-├── 📄 prepare_dataset_local.py      # Kịch bản gộp dữ liệu
-├── 📄 run.py                        # Khởi động nhanh app
-├── 📄 requirements.txt              # Các thư viện Python cần thiết
-└── 📄 README.md                     # File mô tả dự án này
-
----
-
-## ⚙️ Quy trình Tiền xử lý (Preprocessing Pipeline)
-
-Hệ thống sử dụng một chuỗi tiền xử lý hình ảnh phức tạp:
-
+├── 📂 preprocessing/                # Mã nguồn tiền xử lý luồng hỗn hợp
+├── 📂 research/                     # Sổ tay Jupyter huấn luyện AI
+└── 📂 data/                         # Dữ liệu ảnh thô và đã xử lý
 ```
+
+### 2.2 Quy trình Tiền xử lý (Preprocessing Pipeline)
+Hệ thống đề xuất sử dụng một chuỗi tiền xử lý hình ảnh phức tạp để tối ưu hóa đặc trưng trước khi đưa vào mô hình học sâu:
+
+```text
 Ảnh đầu vào Raw (kích cỡ bất kỳ)
     ↓
-1. Cắt vùng phân đoạn (YOLOv8n-seg)
-   - Phát hiện và nhận diện khu vực tổn thương da
-   - Xóa bỏ nền thừa xung quanh
+1. Cắt vùng phân đoạn (YOLOv8n-seg): Nhận diện tổn thương da, xóa nền dư thừa.
     ↓
-2. Tẩy lông (Thuật toán DullRazor)
-   - Xóa bỏ chi tiết lông/tóc trên ảnh
-   - Làm giảm hạt nhiễu
+2. Tẩy lông (Thuật toán DullRazor): Xóa bỏ chi tiết lông/tóc, giảm nhiễu.
     ↓
-3. Kiểm soát chất lượng
-   - Đánh giá chất lượng ảnh chụp
-   - Đảm bảo đúng độ phân giải
+3. Kiểm soát chất lượng ảnh.
     ↓
-4. Resize & Chuẩn hóa giá trị Pixel
-   - Đổi kích thước thành 380x380
-   - Đưa pixel về chuẩn [0-1]
+4. Resize (380x380) & Chuẩn hóa giá trị Pixel về [0-1].
     ↓
-5. Chạy mô hình AI (EfficientNet-B4)
-   - Trích xuất đặc trưng
-   - Phân loại 24 lớp bệnh
-    ↓
-Đầu ra: Tên bệnh dự đoán + Tỉ lệ chính xác (Confidence)
+5. Chạy mô hình phân lớp (EfficientNet-B4): Trích xuất đặc trưng và dự đoán.
 ```
 
----
-
-## 🔬 Chi tiết Huấn luyện (Training)
-
-- **Kiến trúc**: EfficientNet-B4 (PyTorch) với trọng số ImageNet.
-- **Tỷ lệ chia data**: 80% Train / 20% Validation. Dữ liệu được split theo ID bệnh nhân để tránh tình trạng Data Leakage.
-- **Tối ưu hóa**: Áp dụng MixUp augmentation và Micro learning rates để giảm thiểu Overfitting (từ version 2.0 lên 2.1).
-- **Phần cứng**: Train trên Kaggle Notebooks (NVIDIA P100 - 16GB VRAM).
+### 2.3 Mô hình học sâu (Deep Learning Model)
+- **Kiến trúc**: Lựa chọn EfficientNet-B4 (PyTorch) kết hợp kỹ thuật tăng cường dữ liệu.
+- **Tối ưu hóa**: Áp dụng MixUp augmentation và Micro learning rates để giảm thiểu Overfitting trên tập dữ liệu y tế.
 
 ---
 
-## 📈 Lịch sử Phát triển các Phiên bản Model
+## CHƯƠNG 3: KẾT QUẢ THỰC NGHIỆM
 
-- **V1.0 (`kaggle-train-24class-v1.0-results`)**: Phiên bản tinh chỉnh đầu tiên của EfficientNet-B4 trên tập dữ liệu 24 lớp. Đạt độ chính xác (validation accuracy) khoảng ~69% và điểm Macro F1 ~0.596. Đóng vai trò làm cột mốc cơ sở (baseline) cho dự án.
-- **V2.0 (`kaggle-train-24class-v2.0-results`)**: Bản nâng cấp lớn. Cải thiện mạnh mẽ các bước tiền xử lý dữ liệu và áp dụng kỹ thuật làm phong phú hình ảnh (baseline augmentation). Đạt độ chính xác ~86% và điểm Macro F1 ~0.867, cho thấy sự nhảy vọt về hiệu năng, mặc dù bắt đầu xuất hiện những dấu hiệu sớm của hiện tượng quá khớp (overfitting).
-- **V2.1 (`kaggle-train-24class-v2.1-results`)**: Bản tinh chỉnh của V2.0. Tích hợp thêm kỹ thuật MixUp augmentation và Micro learning rates để chống lại hiện tượng overfitting. Đạt **độ chính xác ~86.2%** và **điểm Macro F1 ~0.880** (Tốt nhất). Mô hình có khả năng tổng quát hóa (generalized) tốt hơn trên toàn bộ 24 loại bệnh.
+### 3.1 Bộ dữ liệu sử dụng
+- **Kích thước**: ~41.000 ảnh từ các nguồn mở (DermNet NZ, ISIC 2019, PAD-UFES-20).
+- **Tỷ lệ chia data**: 80% Train / 20% Validation. Chia theo ID bệnh nhân để tránh rò rỉ dữ liệu (Data Leakage).
+
+### 3.2 Thiết lập huấn luyện
+- **Phần cứng**: Thực nghiệm trên môi trường Kaggle Notebooks với GPU NVIDIA P100 - 16GB VRAM.
+
+### 3.3 Kết quả các phiên bản thực nghiệm
+- **V1.0 (`kaggle-train-24class-v1.0-results`)**: Cột mốc baseline. Đạt độ chính xác khoảng ~69%, Macro F1 ~0.596.
+- **V2.0 (`kaggle-train-24class-v2.0-results`)**: Cải tiến tiền xử lý và baseline augmentation. Đạt độ chính xác ~86%, Macro F1 ~0.867.
+- **V2.1 (`kaggle-train-24class-v2.1-results` - Tốt nhất)**: Tích hợp thêm MixUp và Micro LR. Đạt **độ chính xác ~86.2%** và **điểm Macro F1 ~0.880**. Khả năng tổng quát hóa trên 24 loại bệnh đạt mức tối ưu.
 
 ---
 
-## 🛠️ Cài đặt Phát triển
+## CHƯƠNG 4: KẾT LUẬN VÀ HƯỚNG DẪN CÀI ĐẶT
 
-### Chạy với Docker
-Yêu cầu máy đã cài sẵn Docker Desktop hoặc Docker Engine.
+### 4.1 Kết luận
+Dự án đã phát triển thành công một hệ thống khép kín từ khâu tiền xử lý, huấn luyện mô hình học sâu cho tới giao diện tích hợp người dùng, cho phép chẩn đoán 24 bệnh lý da liễu với độ chính xác cao.
 
+### 4.2 Hướng dẫn cài đặt phát triển
+Trọng số của mô hình (Model weights) **không được kèm theo** (do kích thước quá lớn). Cần tải: `efficientnet_b4_derma_v2_1_finetuned.pth` (71MB) từ [Drive](https://drive.google.com/file/d/1O4QKvJgp8FxHhzz8KSM-Gs0xv3aR57-y/view?usp=drive_link) và bỏ vào `backend/ml_models/`.
+
+**Chạy với Docker:**
 ```bash
 git clone https://github.com/DHK-jv/Dermatology-Diagnosis-Model.git
 cd Dermatology-Diagnosis-Model
-
-# Build và chạy ngầm toàn bộ hệ thống (Backend + Frontend + Nginx)
 docker compose up -d --build
 ```
-Truy cập ứng dụng tại: `http://localhost`
 
-### Hoặc chạy thủ công (Môi trường Local)
-
+**Chạy thủ công:**
 ```bash
-# Cài đặt thư viện
-pip install -r requirements.txt
-
 # Terminal 1: Chạy Backend (FastAPI)
-cd backend
-uvicorn app.main:app --reload --port 8000
-
-# Terminal 2: Chạy Frontend (Web Server)
-cd frontend
-python -m http.server 8080
+cd backend && uvicorn app.main:app --reload --port 8000
+# Terminal 2: Chạy Frontend
+cd frontend && python -m http.server 8080
 ```
+Truy cập tại: `http://localhost:8080`
 
----
-
-## ⚠️ Tuyên bố Từ chối Trách nhiệm (Disclaimer)
-
-**Dự án chỉ nhằm mục đích nghiên cứu và giáo dục.**  
-Tất cả các chẩn đoán từ hệ thống AI chỉ mang tính chất **tham khảo chuyên gia** và **không thay thế cho việc chẩn đoán y tế lâm sàng của bác sĩ chuyên khoa**.  
-Vui lòng luôn nhờ tới các chuyên gia da liễu có chứng chỉ để được tư vấn khi phát hiện bệnh!
-
----
+### 4.3 Tuyên bố Từ chối Trách nhiệm (Disclaimer)
+**Dự án chỉ nhằm mục đích nghiên cứu và giáo dục.** Tất cả các chẩn đoán từ hệ thống AI chỉ mang tính chất **tham khảo chuyên gia** và không thay thế cho y tế lâm sàng.
