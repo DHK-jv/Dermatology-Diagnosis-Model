@@ -2,6 +2,7 @@
 Cấu hình cài đặt cho ứng dụng
 """
 import os
+import logging
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
@@ -9,13 +10,16 @@ from dotenv import load_dotenv
 # Đọc biến môi trường từ file .env
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 class Settings:
     """Cài đặt ứng dụng"""
     
     # Đường dẫn
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     PROJECT_ROOT: Path = BASE_DIR.parent
-    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_v3_0.pth"  # Model V3.0 (độ chính xác tập val ~88.0%)
+    DEFAULT_MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_v3_0.pth"  # Model V3.0 (độ chính xác tập val ~88.0%)
+    MODEL_PATH: Path = DEFAULT_MODEL_PATH
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     
     # Cài đặt API
@@ -46,17 +50,39 @@ class Settings:
     
     # Cài đặt mô hình
     CONFIDENCE_THRESHOLD: float = 0.5
+    MODEL_REQUIRED: bool = os.getenv("MODEL_REQUIRED", "false").lower() == "true"
     
     def __init__(self):
         """Khởi tạo cài đặt và tạo các thư mục cần thiết"""
         self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        
+
+        # Cho phép override đường dẫn model qua env (phù hợp production/Render)
+        env_model_path = os.getenv("MODEL_PATH")
+        if env_model_path:
+            self.MODEL_PATH = Path(env_model_path)
+        else:
+            self.MODEL_PATH = self.DEFAULT_MODEL_PATH
+
+        # Fallback cho môi trường dev nếu model được đặt ở kaggle_results
+        if not self.MODEL_PATH.exists():
+            fallback_path = (
+                self.PROJECT_ROOT
+                / "kaggle_results"
+                / "kaggle-train-24class-v3.0-results"
+                / "efficientnet_b4_derma_v3_0.pth"
+            )
+            if fallback_path.exists():
+                self.MODEL_PATH = fallback_path
+
         # Kiểm tra sự tồn tại của mô hình
         if not self.MODEL_PATH.exists():
-            raise FileNotFoundError(
+            message = (
                 f"Model not found at {self.MODEL_PATH}. "
-                f"Please ensure the model file is in the correct location."
+                "Set MODEL_PATH env var to the weights file location."
             )
+            if self.MODEL_REQUIRED:
+                raise FileNotFoundError(message)
+            logger.warning(message)
 
 # Tạo một instance cài đặt toàn cục
 settings = Settings()
