@@ -15,7 +15,7 @@ const API_CONFIG = {
         // ── Production: khangjv.id.vn → gọi thẳng Backend trên Render ──
         // TODO: Sau khi deploy Render xong, thay URL dưới đây bằng URL thật của anh
         if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn') {
-            return 'https://medai-backend.onrender.com'; // ← ĐỔI THÀNH URL RENDER THẬT
+            return 'https://dermatology-diagnosis-model.onrender.com';
         }
 
         // ── Local Dev (run.py / port 3000 / 5500) → trỏ thẳng vào localhost:8000 ──
