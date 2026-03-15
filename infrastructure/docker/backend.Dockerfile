@@ -25,7 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Note: paths are relative to build context (.)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir \
+        torch torchvision \
+        --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt \
+        --extra-index-url https://download.pytorch.org/whl/cpu
 
 # ── Application code ──────────────────────────────────────────
 # Copy backend app code

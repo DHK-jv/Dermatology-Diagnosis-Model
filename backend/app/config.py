@@ -15,7 +15,7 @@ class Settings:
     # Đường dẫn
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     PROJECT_ROOT: Path = BASE_DIR.parent
-    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_v2_1_finetuned.pth"  # Model V2.1 (độ chính xác tập val 86.2%)
+    MODEL_PATH: Path = BASE_DIR / "ml_models" / "efficientnet_b4_derma_v3_0.pth"  # Model V3.0 (độ chính xác tập val ~88.0%)
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     
     # Cài đặt API
