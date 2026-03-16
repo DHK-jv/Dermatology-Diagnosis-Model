@@ -50,7 +50,7 @@ try:
     from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
     
     pipeline = HybridPreprocessingPipeline(
-        mode='auto',
+        mode=settings.PREPROCESSING_MODE,
         target_size=settings.IMAGE_SIZE,
         device='cpu'  # Sử dụng CPU cho backend để tiết kiệm tài nguyên
     )

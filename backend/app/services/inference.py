@@ -35,10 +35,14 @@ class ModelInference:
             self.load_model()
     
     def load_model(self):
-        """Tải mô hình EfficientNet đã được huấn luyện (.pth)"""
+        """Tải mô hình EfficientNet đã được huấn luyện (.pth) với tối ưu bộ nhớ"""
+        import gc
         try:
+            # Giới hạn số luồng xử lý của PyTorch để tiết kiệm RAM trên Render
+            torch.set_num_threads(settings.TORCH_THREADS)
+            
             logger.info(f"Loading PyTorch model from {settings.MODEL_PATH}")
-            logger.info(f"Device: {self._device}")
+            logger.info(f"Device: {self._device} | Threads: {settings.TORCH_THREADS}")
             
             # Tạo cấu trúc mô hình sử dụng torchvision
             # Checkpoint trước đó được huấn luyện bằng torchvision.models.efficientnet_b4
@@ -65,16 +69,21 @@ class ModelInference:
             else:
                 # Dự phòng cho direct state dict (chỉ có model weights cũ)
                 state_dict = checkpoint
-                logger.info("Đã tải direct state dict (không có tham số bổ sung)")
+                logger.info("Đã tải direct state dict")
             
             # Tương thích state dict vào mô hình
             self._model.load_state_dict(state_dict)
+            
+            # Dọn dẹp bộ nhớ ngay lập tức
+            del state_dict
+            del checkpoint
+            gc.collect()
             
             # Đặt mô hình về chế độ đánh giá (chế độ không phải Huấn luyện)
             self._model.to(self._device)
             self._model.eval()
             
-            logger.info(f"Tải mô hình PyTorch thành công.")
+            logger.info(f"Tải mô hình PyTorch thành công. Memory optimized.")
             
         except Exception as e:
             logger.error(f"Failed to load PyTorch model: {str(e)}")

@@ -52,6 +52,10 @@ class Settings:
     CONFIDENCE_THRESHOLD: float = 0.5
     MODEL_REQUIRED: bool = os.getenv("MODEL_REQUIRED", "false").lower() == "true"
     
+    # Preprocessing & Hardware optimization
+    PREPROCESSING_MODE: str = os.getenv("PREPROCESSING_MODE", "auto")
+    TORCH_THREADS: int = int(os.getenv("TORCH_THREADS", "1"))
+    
     def __init__(self):
         """Khởi tạo cài đặt và tạo các thư mục cần thiết"""
         self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
