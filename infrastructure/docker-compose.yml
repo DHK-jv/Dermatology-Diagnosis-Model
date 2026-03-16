@@ -15,8 +15,8 @@ services:
   # ── Backend: FastAPI + PyTorch ──────────────────────────────
   backend:
     build:
-      context: .. # Root context to access preprocessing/
-      dockerfile: docker/backend.Dockerfile
+      context: ..
+      dockerfile: infrastructure/docker/backend.Dockerfile
     container_name: medai_backend
     restart: unless-stopped
 
@@ -55,8 +55,8 @@ services:
     # ── Frontend: Nginx serving static files ───────────────────
   frontend:
     build:
-      context: ../frontend # Static files
-      dockerfile: docker/frontend.Dockerfile # Dockerfile
+      context: ..
+      dockerfile: infrastructure/docker/frontend.Dockerfile
     container_name: medai_frontend
     restart: unless-stopped
 

@@ -12,7 +12,7 @@ LABEL description="MedAI Dermatology - Frontend (Nginx)"
 RUN apk add --no-cache curl
 
 # Copy frontend static files vào nginx html root
-COPY . /usr/share/nginx/html/
+COPY frontend/ /usr/share/nginx/html/
 
 # Xóa Dockerfile khỏi html root nếu có
 RUN rm -f /usr/share/nginx/html/Dockerfile /usr/share/nginx/html/.dockerignore \

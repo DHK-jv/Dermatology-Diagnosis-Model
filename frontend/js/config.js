@@ -11,35 +11,33 @@ const API_CONFIG = {
         const explicitBaseUrl =
             (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
             document.querySelector('meta[name="api-base-url"]')?.content ||
-            localStorage.getItem('API_BASE_URL');
+            localStorage.getItem('API_BASE_URL') ||
+            localStorage.getItem('VITE_API_URL');
 
         if (explicitBaseUrl) {
+            console.log(`[Config] Using explicit BASE_URL: ${explicitBaseUrl}`);
             return explicitBaseUrl.replace(/\/+$/, '');
         }
 
         const port = window.location.port;
         const hostname = window.location.hostname;
-        console.log(`[Config] Detect Port: '${port}', Hostname: '${hostname}'`);
+        console.log(`[Config] Detect Hostname: '${hostname}', Port: '${port}'`);
 
-        // ── Production: khangjv.id.vn → gọi thẳng Backend trên Render ──
-        // TODO: Sau khi deploy Render xong, thay URL dưới đây bằng URL thật của anh
+        // ── Production: khangjv.id.vn → Render Backend ──
         const renderBackendUrl = 'https://dermatology-diagnosis-model.onrender.com';
-        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn') {
+        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn' || hostname.endsWith('.onrender.com')) {
+            console.log('[Config] Environment: Production (Render)');
             return renderBackendUrl;
         }
 
-        // ── Frontend trên Render: mặc định gọi Backend Render ──
-        if (hostname.endsWith('.onrender.com')) {
-            return renderBackendUrl;
-        }
-
-        // ── Local Dev (run.py / port 3000 / 5500) → trỏ thẳng vào localhost:8000 ──
-        if (port === '3000' || port === '5500' || port === '8000' || ((port === '8080' || port === '80') && (hostname === 'localhost' || hostname === '127.0.0.1'))) {
+        // ── Local: localhost / 127.0.0.1 → Local Backend (port 8000) ──
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            console.log('[Config] Environment: Local (Direct to 8000)');
             return 'http://localhost:8000';
         }
 
-        // ── Docker/Nginx Production: dùng relative path để Nginx proxy ──
-        console.log('[Config] Using relative API path (Docker/Nginx)');
+        // Default: Dùng relative path cho các trường hợp khác (ví dụ: Nginx proxy trên server riêng)
+        console.log('[Config] Environment: Default (Relative Path)');
         return '';
     })(),
 
