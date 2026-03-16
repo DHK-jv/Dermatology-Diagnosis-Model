@@ -45,6 +45,12 @@ data/**/*.png
 backend/uploads/
 backend/history.json
 
+# AI Models (Only upload V3.0)
+backend/ml_models/*.pth
+!backend/ml_models/efficientnet_b4_derma_v3_0.pth
+backend/ml_models/*.pt
+!backend/ml_models/yolov8n-seg.pt
+
 # TRAINING RESULTS
 kaggle_results/
 kaggle-train-24class-results/
