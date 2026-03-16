@@ -21,22 +21,35 @@ const API_CONFIG = {
 
         const port = window.location.port;
         const hostname = window.location.hostname;
-        console.log(`[Config] Detect Hostname: '${hostname}', Port: '${port}'`);
+        const protocol = window.location.protocol;
+        console.log(`[Config] Detect Hostname: '${hostname}', Port: '${port}', Protocol: '${protocol}'`);
 
-        // ── Production: khangjv.id.vn → Render Backend ──
-        const renderBackendUrl = 'https://dermatology-diagnosis-model.onrender.com';
-        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn' || hostname.endsWith('.onrender.com')) {
-            console.log('[Config] Environment: Production (Render)');
-            return renderBackendUrl;
-        }
-
-        // ── Local: localhost / 127.0.0.1 → Local Backend (port 8000) ──
+        // ── 1. Local Development: localhost/127.0.0.1 → Local Backend 8000 ──
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            console.log('[Config] Environment: Local (Direct to 8000)');
+            console.log('[Config] Environment: Local Development (Target: 8000)');
             return 'http://localhost:8000';
         }
 
-        // Default: Dùng relative path cho các trường hợp khác (ví dụ: Nginx proxy trên server riêng)
+        // ── 2. Custom Domain: khangjv.id.vn (Dual support) ──
+        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn') {
+            // Nếu dùng HTTPS -> Chắc chắn là Render Production
+            if (protocol === 'https:') {
+                console.log('[Config] Environment: Production (Render Cloud)');
+                return 'https://dermatology-diagnosis-model.onrender.com';
+            }
+            
+            // Nếu dùng HTTP -> Đang test Nginx localhost (Proxy qua Nginx)
+            console.log('[Config] Environment: Local Nginx Proxy (Relative path)');
+            return ''; 
+        }
+
+        // ── 3. Render URL trực tiếp ──
+        if (hostname.endsWith('.onrender.com')) {
+            console.log('[Config] Environment: Render Subdomain');
+            return 'https://dermatology-diagnosis-model.onrender.com';
+        }
+
+        // Mặc định: Dùng relative path cho các trường hợp khác
         console.log('[Config] Environment: Default (Relative Path)');
         return '';
     })(),
