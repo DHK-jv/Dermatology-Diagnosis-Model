@@ -43,98 +43,89 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
 
 
 
-import sys
-# Thêm PROJECT_ROOT vào path để đảm bảo nạp được module preprocessing
-if str(settings.PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(settings.PROJECT_ROOT))
-
-# Khởi tạo pipeline
-try:
-    from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
-    
-    # Tìm đường dẫn model YOLO (Thử best_hair_seg.pt trước, sau đó là yolov8n-seg.pt)
-    yolo_model_path = settings.BASE_DIR / "ml_models" / "best_hair_seg.pt"
-    if not yolo_model_path.exists():
-        yolo_model_path = settings.BASE_DIR / "ml_models" / "yolov8n-seg.pt"
-    
-    pipeline = HybridPreprocessingPipeline(
-        mode=settings.PREPROCESSING_MODE,
-        target_size=settings.IMAGE_SIZE,
-        yolo_model_path=str(yolo_model_path) if yolo_model_path.exists() else None,
-        device='cpu'
-    )
-    PIPELINE_AVAILABLE = True
-    print(f"✅ HybridPreprocessingPipeline loaded successfully (Mode: {settings.PREPROCESSING_MODE})")
-except Exception as e:
-    print(f"⚠️ Failed to load HybridPreprocessingPipeline: {e}")
-    PIPELINE_AVAILABLE = False
+# Lazy loading functions
+def _get_pipeline():
+    """Tạo pipeline tiền xử lý mới (Lazy Load)"""
+    try:
+        from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+        yolo_model_path = settings.BASE_DIR / "ml_models" / "best_hair_seg.pt"
+        if not yolo_model_path.exists():
+            yolo_model_path = settings.BASE_DIR / "ml_models" / "yolov8n-seg.pt"
+        
+        return HybridPreprocessingPipeline(
+            mode=settings.PREPROCESSING_MODE,
+            target_size=settings.IMAGE_SIZE,
+            yolo_model_path=str(yolo_model_path) if yolo_model_path.exists() else None,
+            device='cpu'
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to load HybridPreprocessingPipeline: {e}")
+        return None
 
 
 def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     """
-    Tiền xử lý ảnh toàn diện: Segmentation -> Hair Removal -> Resize -> Normalization
+    Tiền xử lý ảnh toàn diện với cơ chế Lazy Loading để tiết kiệm RAM
     """
+    import gc
+    
     # Mở ảnh
     img = Image.open(io.BytesIO(image_bytes))
-    
-    # Chuyển đổi sang hệ màu RGB
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    
     img_np = np.array(img)
     
-    if PIPELINE_AVAILABLE:
+    # Khởi tạo pipeline TẠI CHỖ (Lazy Load)
+    pipeline = _get_pipeline()
+    
+    result_batch = None
+    normalized_steps = None
+    
+    if pipeline:
         try:
             if return_steps:
                 result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
-                
-                # Chuyển kết quả sang định dạng batch (1, H, W, C) và chuẩn hóa về 0-255 nếu cần
                 result_batch = np.expand_dims(result, axis=0)
                 if result.max() <= 1.05:
                     result_batch = result_batch * 255.0
                 
-                # Chuẩn hóa các bước trung gian sang uint8 để gửi về cho frontend
                 normalized_steps = {}
                 for key, val in steps.items():
-                    if val.dtype == np.float32 or val.dtype == np.float64:
-                        if val.max() <= 1.05:
-                            val = (val * 255).astype(np.uint8)
-                        else:
-                            val = val.astype(np.uint8)
+                    if val.dtype in [np.float32, np.float64]:
+                        val = (val * 255).astype(np.uint8) if val.max() <= 1.05 else val.astype(np.uint8)
                     else:
                         val = val.astype(np.uint8)
                     normalized_steps[key] = val
-                    
-                import gc
-                gc.collect() # Giải phóng RAM ngay sau khi Segment xong
-                
-                return result_batch, normalized_steps
             else:
                 result = pipeline.process(img_np, return_steps=False, verbose=False)
                 result_batch = np.expand_dims(result, axis=0)
                 if result.max() <= 1.05:
                     result_batch = result_batch * 255.0
-                
-                import gc
-                gc.collect() # Giải phóng RAM trước khi trả về cho inference
-                
-                return result_batch
         except Exception as e:
-            print(f"Hybrid Pipeline execution failed: {e}. Falling back to basic resize.")
-    
-    # Dự phòng cuối cùng: Resize cơ bản
-    img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
-    img_array = np.array(img_resized, dtype=np.float32)
-    result_batch = np.expand_dims(img_array, axis=0)
+            print(f"Hybrid Pipeline execution failed: {e}")
+        finally:
+            # GIẢI PHÓNG YOLO NGAY LẬP TỨC
+            if hasattr(pipeline, 'yolo_segmentor') and pipeline.yolo_segmentor:
+                del pipeline.yolo_segmentor.model
+                del pipeline.yolo_segmentor
+            del pipeline
+            gc.collect()
+            print("🧹 YOLO memory cleared after preprocessing")
+
+    # Dự phòng nếu pipeline thất bại hoặc không có
+    if result_batch is None:
+        img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
+        img_array = np.array(img_resized, dtype=np.float32)
+        result_batch = np.expand_dims(img_array, axis=0)
+        if return_steps:
+            normalized_steps = {
+                'original': np.array(img),
+                'resized': np.array(img_resized),
+                'normalized': np.array(img_resized)
+            }
     
     if return_steps:
-        steps = {
-            'original': np.array(img),
-            'resized': np.array(img_resized),
-            'normalized': np.array(img_resized)
-        }
-        return result_batch, steps
-        
+        return result_batch, normalized_steps
     return result_batch
 
 

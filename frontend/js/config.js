@@ -23,11 +23,10 @@ const API_CONFIG = {
         const hostname = window.location.hostname;
         console.log(`[Config] Detect Hostname: '${hostname}', Port: '${port}'`);
 
-        // ── Production: khangjv.id.vn → Render Backend ──
-        const renderBackendUrl = 'https://dermatology-diagnosis-model.onrender.com';
-        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn' || hostname.endsWith('.onrender.com')) {
-            console.log('[Config] Environment: Production (Render)');
-            return renderBackendUrl;
+        // ── Production: khangjv.id.vn → VPS Nginx (Relative Path) ──
+        if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn') {
+            console.log('[Config] Environment: Production (VPS)');
+            return ''; // Nginx handles /api -> backend proxy
         }
 
         // ── Local: localhost / 127.0.0.1 → Local Backend (port 8000) ──
@@ -36,25 +35,25 @@ const API_CONFIG = {
             return 'http://localhost:8000';
         }
 
-        // Default: Dùng relative path cho các trường hợp khác (ví dụ: Nginx proxy trên server riêng)
+        // Default: Dùng relative path cho các trường hợp khác
         console.log('[Config] Environment: Default (Relative Path)');
         return '';
     })(),
 
-    // Tiền tố cho API v1 (Phiên bản đầu tiên)
-    V1_PREFIX: '/api/v1',
+    // Tiền tố cho API (VPS dùng /api)
+    V1_PREFIX: '/api',
 
-    // Các API Endpoints (đường dẫn xử lý)
+    // Các API Endpoints
     ENDPOINTS: {
         HEALTH: '/health',
-        LOGIN: '/api/v1/auth/login',
-        REGISTER: '/api/v1/auth/register',
-        PREDICT: '/api/v1/predict',
-        PREVIEW: '/api/v1/predict/preview',
-        GRADCAM: '/api/v1/gradcam',
-        FEEDBACK: '/api/v1/feedback',
-        HISTORY: '/api/v1/history',
-        DIAGNOSIS: (id) => `/api/v1/history/${id}`
+        LOGIN: '/api/auth/login',
+        REGISTER: '/api/auth/register',
+        PREDICT: '/api/predict',
+        PREVIEW: '/api/predict/preview',
+        GRADCAM: '/api/gradcam',
+        FEEDBACK: '/api/feedback',
+        HISTORY: '/api/history',
+        DIAGNOSIS: (id) => `/api/history/${id}`
     },
 
     // Cài đặt cho mỗi request (yêu cầu)

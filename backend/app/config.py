@@ -23,7 +23,7 @@ class Settings:
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     
     # Cài đặt API
-    API_V1_PREFIX: str = "/api/v1"
+    API_V1_PREFIX: str = "/api"
     PROJECT_NAME: str = "MedAI Dermatology API"
     VERSION: str = "1.0.0"
     
