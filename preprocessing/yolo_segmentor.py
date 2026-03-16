@@ -29,45 +29,45 @@ class YOLOSegmentor:
             mask: numpy array (H, W) or None
             confidence: float (optional)
         """
-        # Run inference
-        results = self.model.predict(
-            source=image,
-            conf=self.conf_threshold,
-            device=self.device,
-            verbose=verbose,
-            retina_masks=True,
-            stream=False 
-        )
+        import gc
+        
+        # Run inference in no_grad mode to save memory
+        with torch.no_grad():
+            results = self.model.predict(
+                source=image,
+                conf=self.conf_threshold,
+                device=self.device,
+                verbose=verbose,
+                retina_masks=True,
+                stream=False 
+            )
 
         if not results or len(results) == 0:
+            del results
+            gc.collect()
             return (None, 0.0) if return_confidence else None
         
         result = results[0]
         
         # Check if masks detected
         if result.masks is None:
+            del results
+            gc.collect()
             return (None, 0.0) if return_confidence else None
         
-        # Get mask with highest confidence
-        # result.boxes.conf is a tensor of confidences
-        # result.masks.data is a tensor of masks (N, H, W)
-        
         if len(result.boxes) == 0:
-             return (None, 0.0) if return_confidence else None
+            del results
+            gc.collect()
+            return (None, 0.0) if return_confidence else None
 
         # Find max confidence index
         max_idx = torch.argmax(result.boxes.conf).item()
         confidence = result.boxes.conf[max_idx].item()
         
         # Extract Mask
-        # Ultralytics masks return (N, H, W), we need to resize to original image shape if not retina
-        # But retina_masks=True usually gives good masks. 
-        # result.masks.data is likely on GPU if device=cuda
-        
         raw_mask = result.masks.data[max_idx].cpu().numpy()
         
         # Resize mask to original image size if needed
-        # raw_mask shape might differ from image shape depending on YOLO version
         img_h, img_w = image.shape[:2]
         
         if raw_mask.shape != (img_h, img_w):
@@ -77,6 +77,11 @@ class YOLOSegmentor:
             
         # Binarize
         mask = (mask > 0.5).astype(np.uint8) * 255
+        
+        # Explicit cleanup of large YOLO objects
+        del results
+        del result
+        gc.collect()
         
         if return_confidence:
             return mask, confidence

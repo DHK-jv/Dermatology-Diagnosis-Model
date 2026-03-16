@@ -105,12 +105,19 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
                         val = val.astype(np.uint8)
                     normalized_steps[key] = val
                     
+                import gc
+                gc.collect() # Giải phóng RAM ngay sau khi Segment xong
+                
                 return result_batch, normalized_steps
             else:
                 result = pipeline.process(img_np, return_steps=False, verbose=False)
                 result_batch = np.expand_dims(result, axis=0)
                 if result.max() <= 1.05:
                     result_batch = result_batch * 255.0
+                
+                import gc
+                gc.collect() # Giải phóng RAM trước khi trả về cho inference
+                
                 return result_batch
         except Exception as e:
             print(f"Hybrid Pipeline execution failed: {e}. Falling back to basic resize.")
