@@ -43,18 +43,28 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
 
 
 
-# Khởi tạo pipeline một lần để tái sử dụng quá trình tiền xử lý
+import sys
+# Thêm PROJECT_ROOT vào path để đảm bảo nạp được module preprocessing
+if str(settings.PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(settings.PROJECT_ROOT))
+
+# Khởi tạo pipeline
 try:
-    # Import trực tiếp (PYTHONPATH xử lý việc phân giải đường dẫn trong Docker và Local)
-    # Chúng ta dựa vào PYTHONPATH=/app (Docker) hoặc chạy từ thư mục gốc dự án (Local)
     from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+    
+    # Tìm đường dẫn model YOLO (Thử best_hair_seg.pt trước, sau đó là yolov8n-seg.pt)
+    yolo_model_path = settings.BASE_DIR / "ml_models" / "best_hair_seg.pt"
+    if not yolo_model_path.exists():
+        yolo_model_path = settings.BASE_DIR / "ml_models" / "yolov8n-seg.pt"
     
     pipeline = HybridPreprocessingPipeline(
         mode=settings.PREPROCESSING_MODE,
         target_size=settings.IMAGE_SIZE,
-        device='cpu'  # Sử dụng CPU cho backend để tiết kiệm tài nguyên
+        yolo_model_path=str(yolo_model_path) if yolo_model_path.exists() else None,
+        device='cpu'
     )
     PIPELINE_AVAILABLE = True
+    print(f"✅ HybridPreprocessingPipeline loaded successfully (Mode: {settings.PREPROCESSING_MODE})")
 except Exception as e:
     print(f"⚠️ Failed to load HybridPreprocessingPipeline: {e}")
     PIPELINE_AVAILABLE = False
@@ -62,17 +72,7 @@ except Exception as e:
 
 def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     """
-    Tiền xử lý ảnh cho đầu vào mô hình sử dụng Hybrid Pipeline
-    
-    Args:
-        image_bytes: Raw image bytes (ảnh gốc)
-        return_steps: Có trả về các bước trung gian hay không
-        
-    Returns:
-        Nếu return_steps=False:
-            Mảng ảnh đã qua tiền xử lý, sẵn sàng cho mô hình (kích thước: (1, 380, 380, 3))
-        Nếu return_steps=True:
-            Tuple (img_array, steps_dict)
+    Tiền xử lý ảnh toàn diện: Segmentation -> Hair Removal -> Resize -> Normalization
     """
     # Mở ảnh
     img = Image.open(io.BytesIO(image_bytes))
@@ -81,19 +81,19 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     if img.mode != 'RGB':
         img = img.convert('RGB')
     
-    # Chuyển sang mảng numpy cho pipeline
     img_np = np.array(img)
     
     if PIPELINE_AVAILABLE:
         try:
-            # Sử dụng pipeline tiền xử lý (YOLO tự động tạo mask, không có mask thủ công)
             if return_steps:
                 result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
                 
-                # Thêm chiều batch vào kết quả
+                # Chuyển kết quả sang định dạng batch (1, H, W, C) và chuẩn hóa về 0-255 nếu cần
                 result_batch = np.expand_dims(result, axis=0)
+                if result.max() <= 1.05:
+                    result_batch = result_batch * 255.0
                 
-                # Chuẩn hóa các bước trung gian về 0-255 nếu đang ở dạng 0-1
+                # Chuẩn hóa các bước trung gian sang uint8 để gửi về cho frontend
                 normalized_steps = {}
                 for key, val in steps.items():
                     if val.dtype == np.float32 or val.dtype == np.float64:
@@ -105,56 +105,30 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
                         val = val.astype(np.uint8)
                     normalized_steps[key] = val
                     
-                return result_batch * 255.0, normalized_steps
+                return result_batch, normalized_steps
             else:
                 result = pipeline.process(img_np, return_steps=False, verbose=False)
-                return np.expand_dims(result, axis=0) * 255.0
-                
+                result_batch = np.expand_dims(result, axis=0)
+                if result.max() <= 1.05:
+                    result_batch = result_batch * 255.0
+                return result_batch
         except Exception as e:
-            print(f"Hybrid Pipeline failed: {e}. Attempting pure OpenCV fallback.")
-            
-            # Dự phòng bằng pipeline OpenCV (bỏ qua segmentation nếu không có mask, nhưng vẫn xóa lông)
-            # Sử dụng instance opencv_pipeline bên trong hybrid pipeline nếu có
-            try:
-                if return_steps:
-                    result, steps = pipeline.opencv_pipeline.process(img_np, return_steps=True)
-                    
-                    # Thêm chiều batch
-                    result_batch = np.expand_dims(result, axis=0)
-                    
-                    # Chuẩn hóa các bước trung gian
-                    normalized_steps = {}
-                    for key, val in steps.items():
-                         if val.dtype == np.float32 or val.dtype == np.float64:
-                             if val.max() <= 1.05:
-                                  val = (val * 255).astype(np.uint8)
-                             else:
-                                  val = val.astype(np.uint8)
-                         else:
-                             val = val.astype(np.uint8)
-                         normalized_steps[key] = val
-                         
-                    return result_batch * 255.0, normalized_steps
-                else:
-                    result = pipeline.opencv_pipeline.process(img_np)
-                    return np.expand_dims(result, axis=0) * 255.0
-            except Exception as e2:
-                print(f"OpenCV fallback failed: {e2}. Using basic resize.")
+            print(f"Hybrid Pipeline execution failed: {e}. Falling back to basic resize.")
     
-    # Dự phòng cuối cùng: Thay đổi kích thước (Resize) cơ bản
+    # Dự phòng cuối cùng: Resize cơ bản
     img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
     img_array = np.array(img_resized, dtype=np.float32)
-    # img_array = img_array / 255.0 # Kiểm tra xem mô hình có cần phép tính này không
+    result_batch = np.expand_dims(img_array, axis=0)
     
     if return_steps:
-        # Trả về các bước trung gian cơ bản cho trường hợp dự phòng
         steps = {
             'original': np.array(img),
-            'resized': np.array(img_resized)
+            'resized': np.array(img_resized),
+            'normalized': np.array(img_resized)
         }
-        return np.expand_dims(img_array, axis=0), steps
+        return result_batch, steps
         
-    return np.expand_dims(img_array, axis=0)
+    return result_batch
 
 
 async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:
