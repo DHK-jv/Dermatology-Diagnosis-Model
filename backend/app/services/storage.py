@@ -211,7 +211,7 @@ class StorageService:
         Lưu đánh giá phản hồi cho một chẩn đoán
         
         Args:
-            feedback: Dictionary chứa dữ liệu đánh giá
+            feedback: Dictionary chứa dữ liệu đánh giá (bao gồm doctor_id)
             
         Returns:
             Trạng thái thành công
@@ -234,10 +234,13 @@ class StorageService:
                 # Cập nhật chẩn đoán gốc để trỏ cờ báo đã có đánh giá
                 self.collection.update_one(
                     {"diagnosis_id": feedback["diagnosis_id"]},
-                    {"$set": {"has_feedback": True}}
+                    {"$set": {
+                        "has_feedback": True,
+                        "reviewed_by": feedback.get("doctor_id")
+                    }}
                 )
                 
-                logger.info(f"Saved feedback for {feedback['diagnosis_id']} to MongoDB")
+                logger.info(f"Saved feedback for {feedback['diagnosis_id']} to MongoDB by {feedback.get('doctor_id')}")
                 return True
             except Exception as e:
                 logger.error(f"Error saving feedback to MongoDB: {e}")
@@ -267,10 +270,11 @@ class StorageService:
                 for d in diagnoses:
                     if d.get("diagnosis_id") == feedback["diagnosis_id"]:
                         d["has_feedback"] = True
+                        d["reviewed_by"] = feedback.get("doctor_id")
                         break
                 self._write_json_file(diagnoses)
                     
-                logger.info(f"Saved feedback for {feedback['diagnosis_id']} to JSON")
+                logger.info(f"Saved feedback for {feedback['diagnosis_id']} to JSON by {feedback.get('doctor_id')}")
                 return True
             except Exception as e:
                 logger.error(f"Error saving feedback to JSON: {e}")

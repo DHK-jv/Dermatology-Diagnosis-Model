@@ -48,6 +48,8 @@ class GradCAM:
         for hook in self._hooks:
             hook.remove()
         self._hooks = []
+        self.gradients = None
+        self.activations = None
 
     def generate(self, input_tensor: torch.Tensor, class_idx: Optional[int] = None) -> np.ndarray:
         """
@@ -166,6 +168,14 @@ def generate_gradcam_overlay(
     # 8. Mã hóa thẻ ảnh JPEG thành định dạng cơ số 64 (base64)
     overlay_bgr = cv2.cvtColor(overlay_with_legend, cv2.COLOR_RGB2BGR)
     _, buffer = cv2.imencode('.jpg', overlay_bgr, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    
+    # 9. Dọn dẹp bộ nhớ tích cực (Rất quan trọng cho 512MB RAM)
+    import gc
+    del cam, cam_resized, heatmap, overlay, overlay_with_legend, original_img, input_tensor
+    if device.type == 'cuda':
+        torch.cuda.empty_cache()
+    gc.collect()
+    
     return base64.b64encode(buffer).decode('utf-8')
 
 

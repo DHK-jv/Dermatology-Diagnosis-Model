@@ -82,6 +82,11 @@ class ModelInference:
             # Đặt mô hình về chế độ đánh giá (chế độ không phải Huấn luyện)
             self._model.to(self._device)
             self._model.eval()
+
+            # Tối ưu hóa cho môi trường cực thấp RAM (Render 512MB)
+            if os.environ.get("RENDER") == "true" or settings.PREPROCESSING_MODE == "opencv":
+                logger.info("Chế độ bộ nhớ thấp: Chuyển mô hình sang Half Precision (FP16)")
+                self._model = self._model.half()
             
             logger.info(f"Tải mô hình PyTorch thành công. Memory optimized.")
             
@@ -123,6 +128,10 @@ class ModelInference:
             
             # Thêm chiều batch: (1, C, H, W)
             input_tensor = img_tensor.unsqueeze(0).to(self._device)
+            
+            # Nếu đang dùng nửa chính xác (FP16) cho Render
+            if next(self._model.parameters()).dtype == torch.float16:
+                input_tensor = input_tensor.half()
             
             # 2. Xử lý suy luận AI
             with torch.no_grad():
@@ -177,6 +186,12 @@ class ModelInference:
                 f"(confidence: {confidence:.3f})"
             )
             
+            # Dọn dẹp cache và rác để duy trì RAM dưới 512MB
+            import gc
+            gc.collect()
+            if self._device.type == 'cuda':
+                torch.cuda.empty_cache()
+
             return predicted_class, confidence, all_predictions, critical_warning
             
         except Exception as e:

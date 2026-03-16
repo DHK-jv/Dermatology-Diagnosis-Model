@@ -127,20 +127,34 @@ function displayDiagnosisResult(diagnosis) {
     // Cập nhật danh sách tất cả các chẩn đoán thuộc nhánh bệnh nguy cơ liên đới khác
     updateAllPredictions(diagnosis.all_predictions);
 
-    // Kiểm tra trạng thái phản hồi để ẩn/hiện form
-    const formContainer = document.getElementById('feedback-form');
-    const successMsg = document.getElementById('feedback-success');
-    if (formContainer && successMsg) {
-        if (diagnosis.has_feedback) {
-            formContainer.classList.add('hidden');
-            successMsg.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Đánh giá của bạn đã được ghi nhận trước đó.';
-            successMsg.classList.remove('hidden');
-            successMsg.classList.add('flex');
+    // Kiểm tra Phân Quyền UI: Chỉ Bác sĩ & Admin mới thấy mục Feedback
+    const userInfo = retrieve('user_info');
+    const userRole = userInfo ? userInfo.role : 'guest';
+    const feedbackSection = document.getElementById('feedback-section');
+    
+    if (feedbackSection) {
+        if (userRole === 'doctor' || userRole === 'admin') {
+            feedbackSection.classList.remove('hidden');
+            
+            // Nếu đã feedback rồi thì ẩn form và hiện thông báo success
+            const formContainer = document.getElementById('feedback-form');
+            const successMsg = document.getElementById('feedback-success');
+            if (formContainer && successMsg) {
+                if (diagnosis.has_feedback) {
+                    formContainer.classList.add('hidden');
+                    successMsg.innerHTML = '<span class="material-symbols-outlined text-green-500">check_circle</span> Phản hồi chuyên môn của bạn đã được ghi nhận.';
+                    successMsg.classList.remove('hidden');
+                    successMsg.classList.add('flex');
+                } else {
+                    formContainer.classList.remove('hidden');
+                    successMsg.classList.add('hidden');
+                    successMsg.classList.remove('flex');
+                }
+            }
         } else {
-            formContainer.classList.remove('hidden');
-            successMsg.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Cảm ơn bạn đã đóng góp! Phản hồi đã được ghi nhận.';
-            successMsg.classList.add('hidden');
-            successMsg.classList.remove('flex');
+            // User thường và Guest không thấy mục này
+            feedbackSection.classList.add('hidden');
+            console.log('RBAC: Feedback section hidden for role:', userRole);
         }
     }
 
@@ -474,15 +488,7 @@ function dataURLtoBlob(dataURL) {
  */
 function setupFeedback() {
     const btnCorrect = document.getElementById('btn-feedback-correct');
-    const btnIncorrect = document.getElementById('btn-feedback-incorrect');
-    const incorrectDetails = document.getElementById('feedback-incorrect-details');
-    const selectActualClass = document.getElementById('feedback-actual-class');
-    const submitBtn = document.getElementById('btn-submit-feedback');
-    const formContainer = document.getElementById('feedback-form');
-    const successMsg = document.getElementById('feedback-success');
-    const notesInput = document.getElementById('feedback-notes');
-
-    if (!btnCorrect) return; // Nhanh chóng tuýt còi thoát script do ta có khả năng k nằm trên site result.html
+    if (!btnCorrect || document.getElementById('feedback-section')?.classList.contains('hidden')) return;
 
     // Đổ danh sách đổ option mảng option tên bệnh (điền Select menu thả xuống class thực tế)
     Object.keys(DISEASE_NAMES).forEach(code => {

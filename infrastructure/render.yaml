@@ -16,6 +16,8 @@ services:
         value: "1" # Limit threading overhead
       - key: MALLOC_ARENA_MAX
         value: "2" # Avoid memory fragmentation
+      - key: WEB_CONCURRENCY
+        value: "1" # Ensure only one worker to stay under 512MB
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: USE_MONGODB

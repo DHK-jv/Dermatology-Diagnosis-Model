@@ -97,6 +97,7 @@ class DiagnosisHistory(BaseModel):
     risk_level_vi: str
     timestamp: datetime
     image_filename: Optional[str] = None
+    user_id: Optional[str] = Field(default=None, description="Username của người thực hiện (Chỉ Admin thấy)")
     critical_warning: Optional[Dict] = Field(default=None)
     has_feedback: bool = Field(default=False)
     

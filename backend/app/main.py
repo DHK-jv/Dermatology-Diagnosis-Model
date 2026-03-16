@@ -244,6 +244,12 @@ async def predict(
         logger.info(f"Running AI prediction for {diagnosis_id}")
         predicted_class, confidence, all_predictions, critical_warning = model_service.predict(preprocessed_img)
         
+        # Dọn dẹp bộ nhớ ảnh trung gian
+        del file_content
+        del preprocessed_img
+        import gc
+        gc.collect()
+        
         # Lấy thông tin bệnh lý
         disease_name_vi = DISEASE_NAMES_VI.get(predicted_class, "Không xác định")
         disease_name_en = DISEASE_NAMES_EN.get(predicted_class, "Unknown")
@@ -520,19 +526,32 @@ async def preview_preprocessing(file: UploadFile = File(..., description="Ảnh 
 @app.post(
     f"{settings.API_V1_PREFIX}/feedback",
     tags=["Feedback"],
-    summary="Gửi phản hồi cho AI",
-    description="Nhận phản hồi từ Bác sĩ/Người dùng về chẩn đoán của AI đúng hay sai"
+    summary="Gửi phản hồi cho AI (Chuyên gia)",
+    description="Nhận phản hồi từ Bác sĩ/Admin về chẩn đoán của AI đúng hay sai"
 )
-async def submit_feedback(feedback: FeedbackRequest):
+async def submit_feedback(
+    feedback: FeedbackRequest, 
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Endpoint nhận phản hồi
-    
-    - **feedback**: Dữ liệu phản hồi (đúng/sai, class thực tế nếu sai)
+    Endpoint nhận phản hồi chuyên môn. 
+    Yêu cầu quyền Bác sĩ (doctor) hoặc Quản trị viên (admin).
     """
+    if current_user.get("role") not in ["doctor", "admin"]:
+        logger.warning(f"Unauthorized feedback attempt by user: {current_user.get('username')}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ có Bác sĩ hoặc Quản trị viên mới có quyền gửi đánh giá chuyên môn"
+        )
+        
     try:
-        success = await storage_service.save_feedback(feedback.dict())
+        feedback_dict = feedback.model_dump() if hasattr(feedback, 'model_dump') else feedback.dict()
+        # Ghi lại ai là người đánh giá
+        feedback_dict["doctor_id"] = current_user.get("username")
+        
+        success = await storage_service.save_feedback(feedback_dict)
         if success:
-            return {"status": "success", "message": "Cảm ơn bạn đã gửi phản hồi!"}
+            return {"status": "success", "message": "Cảm ơn ý kiến chuyên môn của bạn!"}
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -609,6 +628,12 @@ async def gradcam(
             device=model_service._device,
             class_idx=class_idx
         )
+        
+        # Dọn dẹp bộ nhớ ảnh trung gian
+        del file_content
+        del preprocessed_img
+        import gc
+        gc.collect()
 
         return GradCAMResponse(
             heatmap_overlay=f"data:image/jpeg;base64,{heatmap_b64}",
