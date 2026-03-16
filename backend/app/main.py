@@ -611,11 +611,15 @@ async def gradcam(
 
         # Xác định nhãn phân lớp (class) mục tiêu
         class_idx = None
+        predicted_class_name = "N/A"
+        
         if target_class and target_class in CLASS_NAMES:
             class_idx = CLASS_NAMES.index(target_class)
             predicted_class_name = target_class
+            logger.info(f"GradCAM: Using provided target_class '{target_class}' (idx={class_idx})")
         else:
-            # Để GradCAM sử dụng kết quả dự đoán của AI nếu không chọn
+            # Chỉ chạy predict nếu không có target_class (để tiết kiệm RAM)
+            logger.info("GradCAM: No target_class provided, running inference to find best class")
             predicted_class_name, _, _, _ = model_service.predict(preprocessed_img)
             class_idx = CLASS_NAMES.index(predicted_class_name)
 

@@ -81,12 +81,12 @@ class ModelInference:
             
             # Đặt mô hình về chế độ đánh giá (chế độ không phải Huấn luyện)
             self._model.to(self._device)
-            self._model.eval()
-
-            # Tối ưu hóa cho môi trường cực thấp RAM (Render 512MB)
-            if os.environ.get("RENDER") == "true" or settings.PREPROCESSING_MODE == "opencv":
-                logger.info("Chế độ bộ nhớ thấp: Chuyển mô hình sang Half Precision (FP16)")
+            # Tối ưu hóa cho môi trường cực thấp RAM (Chỉ dùng FP16 nếu có GPU)
+            if self._device.type == 'cuda' and (os.environ.get("RENDER") == "true" or settings.PREPROCESSING_MODE == "opencv"):
+                logger.info("Chế độ bộ nhớ thấp (GPU): Chuyển mô hình sang Half Precision (FP16)")
                 self._model = self._model.half()
+            elif os.environ.get("RENDER") == "true":
+                logger.info("Chế độ bộ nhớ thấp (CPU): Giữ Float32 (Half không hỗ trợ tốt trên CPU)")
             
             logger.info(f"Tải mô hình PyTorch thành công. Memory optimized.")
             

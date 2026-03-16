@@ -77,9 +77,13 @@ class GradCAM:
         self.model.zero_grad()
 
         # Truyền ngược (Backward pass) cho lớp mục tiêu
-        one_hot = torch.zeros_like(output)
-        one_hot[0][class_idx] = 1
-        output.backward(gradient=one_hot)
+        try:
+            one_hot = torch.zeros_like(output)
+            one_hot[0][class_idx] = 1
+            output.backward(gradient=one_hot)
+        except Exception as e:
+            logger.error(f"Error during backward pass: {str(e)}")
+            raise
 
         # Tổng hợp gradient qua các chiều không gian (Global Average Pooling)
         # gradients: (1, C, H, W) → weights: (C,)
@@ -134,8 +138,12 @@ def generate_gradcam_overlay(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225]
     )
-    img_tensor = normalize(img_tensor)
-    input_tensor = img_tensor.unsqueeze(0).to(device)
+    input_tensor = normalize(img_tensor)
+    input_tensor = input_tensor.unsqueeze(0).to(device)
+
+    # Đảm bảo tensor cùng kiểu với model (FP16 / FP32)
+    if next(model.parameters()).dtype == torch.float16:
+        input_tensor = input_tensor.half()
 
     # 2. Lấy lớp mục tiêu: khối cuối cùng của các đặc trưng (features) bên trong EfficientNet-B4
     # model.features[-1] là khối MBConv cuối cùng (đầu ra có: 1792 kênh)
