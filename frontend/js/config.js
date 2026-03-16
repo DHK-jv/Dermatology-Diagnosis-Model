@@ -24,8 +24,18 @@ const API_CONFIG = {
         const protocol = window.location.protocol;
         console.log(`[Config] Detect Hostname: '${hostname}', Port: '${port}', Protocol: '${protocol}'`);
 
-        // ── 1. Local Development: localhost/127.0.0.1 → Local Backend 8000 ──
+        // ── 1. Local Development: localhost/127.0.0.1 ──
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            const inferredPort = port || (protocol === 'https:' ? '443' : '80');
+            const nginxPorts = new Set(['80', '8080']);
+
+            // Nếu chạy qua Nginx (port 80/8080) → dùng đường dẫn tương đối để proxy nội bộ
+            if (nginxPorts.has(inferredPort)) {
+                console.log('[Config] Environment: Local Nginx Proxy (Relative path)');
+                return '';
+            }
+
+            // Nếu chạy dev server thuần (port 3000/5173/...) → gọi thẳng backend 8000
             console.log('[Config] Environment: Local Development (Target: 8000)');
             return 'http://localhost:8000';
         }

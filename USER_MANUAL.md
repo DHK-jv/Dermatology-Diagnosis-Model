@@ -25,16 +25,28 @@ Hệ thống sử dụng mô hình AI được tinh chỉnh từ EfficientNet-B4
 ---
 
 ## 3. Cài đặt bằng Docker (Giải pháp khuyên dùng)
-Cách nhanh nhất và ít gặp lỗi môi trường nhất là sử dụng Docker. Tất cả Frontend, Backend và Nginx sẽ được khởi tạo trong container.
+
+### 3.1. Local Development (Nginx Reverse Proxy)
+Tất cả Frontend, Backend, AI model và preprocessing chạy cục bộ. Nginx proxy `/api/v1/` về backend.
 
 1. Đảm bảo bạn đã cài đặt Docker và Docker Compose.
-2. Mở Terminal (Command Prompt/PowerShell) tại thư mục gốc của dự án `MedAI_Dermatology`.
+2. Mở Terminal tại thư mục gốc dự án `MedAI_Dermatology`.
 3. Chạy lệnh:
    ```bash
-   docker compose up -d --build
+   docker compose -f infrastructure/docker-compose.yml up -d --build
    ```
-4. Đợi quá trình tải package và build image hoàn tất (khoảng 2-5 phút).
-5. Mở trình duyệt và truy cập: `http://localhost`. Hệ thống đã sẵn sàng sử dụng.
+4. Đợi quá trình build hoàn tất (khoảng 2-5 phút).
+5. Truy cập: `http://localhost`.
+
+### 3.2. Production (Frontend Only)
+Chỉ triển khai frontend. Backend chạy trên Render và frontend gọi trực tiếp API Render.
+
+1. Trên VPS/Server production, chạy:
+   ```bash
+   docker compose -f infrastructure/docker-compose.prod.yml up -d --build
+   ```
+2. Nginx production sử dụng `infrastructure/nginx/vps_production.conf`.
+3. Truy cập: `https://khangjv.id.vn`.
 
 ---
 
@@ -76,6 +88,10 @@ cd frontend
 python -m http.server 8080
 ```
 Ứng dụng Web sẽ mở trên trình duyệt tại cổng 8080: `http://localhost:8080`.
+
+### Bước 4.4. (Tuỳ chọn) Chạy qua Nginx Local
+Nếu muốn đúng kiến trúc local (Nginx reverse proxy), dùng cấu hình:
+`infrastructure/nginx/medai_nginx.conf` và truy cập `http://localhost`.
 
 ---
 
