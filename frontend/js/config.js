@@ -47,6 +47,8 @@ const API_CONFIG = {
     // Các API Endpoints (đường dẫn xử lý)
     ENDPOINTS: {
         HEALTH: '/health',
+        LOGIN: '/api/v1/auth/login',
+        REGISTER: '/api/v1/auth/register',
         PREDICT: '/api/v1/predict',
         PREVIEW: '/api/v1/predict/preview',
         GRADCAM: '/api/v1/gradcam',

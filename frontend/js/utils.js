@@ -10,6 +10,8 @@
  * @returns {Promise<object>} Dữ liệu JSON phản hồi
  */
 async function apiCall(url, options = {}) {
+    console.log(`[API] Call: ${options.method || 'GET'} ${url}`);
+    
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 

@@ -48,20 +48,13 @@ class AuthManager {
             formData.append('username', username);
             formData.append('password', password);
 
-            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.V1_PREFIX}/auth/login`, {
+            const data = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LOGIN}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: formData.toString()
             });
-
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.detail || 'Đăng nhập thất bại');
-            }
-
-            const data = await response.json();
 
             localStorage.setItem(this.tokenKey, data.access_token);
             localStorage.setItem(this.userKey, JSON.stringify(data.user));
@@ -93,7 +86,7 @@ class AuthManager {
                 role: 'user'
             };
 
-            const data = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.V1_PREFIX}/auth/register`, {
+            const data = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REGISTER}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
