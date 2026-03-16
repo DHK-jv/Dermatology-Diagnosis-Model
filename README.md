@@ -1,5 +1,5 @@
-# BÁO CÁO TỔNG KẾT KHÓA LUẬN / ĐỒ ÁN
-# 🏥 MEDAI DERMATOLOGY: HỆ THỐNG TRÍ TUỆ NHÂN TẠO CHẨN ĐOÁN 24 BỆNH LÝ DA LIỄU
+# BÁO CÁO TỔNG KẾT ĐỒ ÁN 2
+# 🏥 MEDAI DERMATOLOGY: HỆ THỐNG TRÍ TUỆ NHÂN TẠO CHẨN ĐOÁN BỆNH LÝ DA LIỄU
 
 > **Tác giả:** Dương Hoàng Khang - 223952 - DH22KPM01  
 > **Ngành / Chuyên ngành:** Kỹ thuật Phần mềm (Software Engineering)

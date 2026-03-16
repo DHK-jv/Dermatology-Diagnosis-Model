@@ -221,7 +221,8 @@ async function fetchPreprocessingPreview(file) {
         }
 
     } catch (error) {
-        console.error('Preview error:', error);
+        const baseUrl = (typeof API_CONFIG !== 'undefined' && API_CONFIG.BASE_URL) ? API_CONFIG.BASE_URL : 'unknown';
+        console.error('Preview error:', error, 'Base URL:', baseUrl);
 
         // Hiển thị trạng thái phát sinh hiện tượng Lỗi
         const statusEl = document.getElementById('step-status');
@@ -232,6 +233,9 @@ async function fetchPreprocessingPreview(file) {
             statusEl.querySelector('span').classList.remove('bg-green-500', 'animate-pulse');
             statusEl.querySelector('span').classList.add('bg-white');
             statusLabel.textContent = "Preview Error";
+        }
+        if (typeof showError === 'function') {
+            showError(error?.message || 'Preview Error');
         }
     } finally {
         if (loadingEl) loadingEl.classList.add('hidden');

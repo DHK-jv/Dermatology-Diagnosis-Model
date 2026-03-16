@@ -16,71 +16,39 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# ============================================
-# DATA DIRECTORIES - Keep samples only
-# ============================================
+# ==========================================
+# DATA FOLDER CONFIGURATION
+# ==========================================
+# 1. Bỏ qua tất cả các file bên trong thư mục data
+data/**/*
 
-# Ignore all data first
-data/
+# 2. Bỏ chặn (cho phép) Git đọc các thư mục con
+!data/**/
 
-# Then allow specific structure and samples
-!data/
-!data/README.md
+# 3. Cho phép theo dõi các file metadata và file giữ chỗ
+!data/**/*.csv
+!data/**/*.md
+!data/**/.gitkeep
 
-# RAW DATA - Allow structure and sample images
-!data/raw/
-!data/raw/dermnet/
-!data/raw/dermnet/test/
-!data/raw/dermnet/test/*/
-!data/raw/dermnet/test/*/*.jpg
-!data/raw/dermnet/test/*/*.jpeg
-!data/raw/dermnet/test/*/*.png
+# 4. Đảm bảo chặn tuyệt đối các định dạng ảnh trong data
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+# ==========================================
 
-!data/raw/isic_2019/
-!data/raw/isic_2019/ISIC_2019_Training_Input/
-!data/raw/isic_2019/ISIC_2019_Training_Input/*.jpg
-!data/raw/isic_2019/*.csv
-
-!data/raw/pad_ufes_20/
-!data/raw/pad_ufes_20/images/
-!data/raw/pad_ufes_20/images/*/
-!data/raw/pad_ufes_20/images/*/*.png
-!data/raw/pad_ufes_20/*.csv
-
-# PROCESSED DATA - Do not upload images
-data/processed/
-
-# ============================================
 # LARGE FILES & ARCHIVES
-# ============================================
 *.zip
 *.rar
 *.tar.gz
 
-
-# ============================================
 # BACKEND TEMPORARY FILES
-# ============================================
 backend/uploads/
 backend/history.json
 
-# ============================================
 # TRAINING RESULTS
-# ============================================
+kaggle_results/
 kaggle-train-24class-results/
 kaggle-train-24class-v1.0-results/
 kaggle-train-24class-v2.0-results/
 kaggle-train-24class-v2.1-results/
-
-# ============================================
-# MODEL WEIGHTS (too large for GitHub)
-# Download: see README for Google Drive link
-# ============================================
-*.keras
-*.h5
-*.hdf5
-*.pth
-*.pt
-*.ckpt
-*.onnx
-backend/ml_models/
+kaggle-train-24class-v3.0-results/
