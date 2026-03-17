@@ -88,13 +88,12 @@ function displayHistory(records) {
         return;
     }
 
-    // Xóa sạch các thẻ dòng cũ đã nhúng trước đó
-    const rows = tableBody.querySelectorAll('.bg-white, .bg-gray-900');
-    rows.forEach(row => row.remove());
+    // Xóa sạch các thẻ dòng cũ đã nhúng trước đó hoặc thông báo không có dữ liệu
+    tableBody.innerHTML = '';
 
     if (records.length === 0) {
         // Giao diện không có lịch sử sẽ trả hiển thị rỗng
-        tableBody.innerHTML += `
+        tableBody.innerHTML = `
             <div class="col-span-12 text-center py-12">
                 <span class="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600">folder_open</span>
                 <p class="text-gray-500 dark:text-gray-400 mt-4">Không có dữ liệu</p>

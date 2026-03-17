@@ -74,6 +74,20 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
     if img.mode != 'RGB':
         img = img.convert('RGB')
     img_np = np.array(img)
+
+    # Nếu muốn tắt toàn bộ tiền xử lý (chỉ resize)
+    if settings.PREPROCESSING_MODE.lower() == "none":
+        img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
+        img_array = np.array(img_resized, dtype=np.float32)
+        result_batch = np.expand_dims(img_array, axis=0)
+        if return_steps:
+            normalized_steps = {
+                'original': np.array(img),
+                'resized': np.array(img_resized),
+                'normalized': np.array(img_resized)
+            }
+            return result_batch, normalized_steps
+        return result_batch
     
     # Khởi tạo pipeline TẠI CHỖ (Lazy Load)
     pipeline = _get_pipeline()

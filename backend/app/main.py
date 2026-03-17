@@ -244,8 +244,7 @@ async def predict(
         logger.info(f"Running AI prediction for {diagnosis_id}")
         predicted_class, confidence, all_predictions, critical_warning = model_service.predict(preprocessed_img)
         
-        # Dọn dẹp bộ nhớ ảnh trung gian
-        del file_content
+        # Dọn dẹp bộ nhớ ảnh trung gian (Cần giữ file_content để lưu sau này)
         del preprocessed_img
         import gc
         gc.collect()
@@ -286,6 +285,10 @@ async def predict(
             logger.info(f"Saved image for {diagnosis_id}")
         except Exception as e:
             logger.warning(f"Failed to save image: {e}")
+
+        # Cuối cùng mới giải phóng file_content
+        del file_content
+        gc.collect()
         
         # Lưu vào cơ sở dữ liệu (CHỈ KHI CÓ USER ĐĂNG NHẬP)
         if current_user:

@@ -20,10 +20,11 @@ services:
     container_name: medai_backend
     restart: unless-stopped
 
+    env_file:
+      - ../.env
+
     environment:
       - PYTHONUNBUFFERED=1
-      - USE_MONGODB=${USE_MONGODB:-false}
-      - MONGODB_URL=${MONGODB_URL:-}
 
     volumes:
       - ../backend/ml_models:/app/ml_models:ro # model weights (read-only)

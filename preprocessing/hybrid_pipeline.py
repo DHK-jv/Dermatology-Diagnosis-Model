@@ -48,13 +48,36 @@ class ImagePreprocessingPipeline:
         except Exception:
             return image
 
+    def resize_with_padding(self, image, size):
+        """Resize image while preserving aspect ratio, using padding to reach target size."""
+        h, w = image.shape[:2]
+        target_w, target_h = size
+        
+        # Calculate scale to fit image within target size
+        scale = min(target_w / w, target_h / h)
+        new_w, new_h = int(w * scale), int(h * scale)
+        
+        # Resize image
+        resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        
+        # Create black canvas and paste resized image in center
+        canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+        x_offset = (target_w - new_w) // 2
+        y_offset = (target_h - new_h) // 2
+        canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+        
+        return canvas
+
     def resize_image(self, image):
-        """Resize to target size using OpenCV."""
+        """Resize to target size preserving aspect ratio."""
         if image is None or image.size == 0:
             raise ValueError("Invalid image for resize")
-        if image.shape[:2] == self.target_size:
+            
+        # If it's already the target size, just return
+        if image.shape[0] == self.target_size[1] and image.shape[1] == self.target_size[0]:
             return image
-        return cv2.resize(image, self.target_size, interpolation=cv2.INTER_AREA)
+            
+        return self.resize_with_padding(image, self.target_size)
 
     def hair_removal(self, image):
         """

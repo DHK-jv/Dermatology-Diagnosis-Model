@@ -488,6 +488,14 @@ function dataURLtoBlob(dataURL) {
  */
 function setupFeedback() {
     const btnCorrect = document.getElementById('btn-feedback-correct');
+    const btnIncorrect = document.getElementById('btn-feedback-incorrect');
+    const incorrectDetails = document.getElementById('feedback-incorrect-details');
+    const selectActualClass = document.getElementById('feedback-actual-class');
+    const submitBtn = document.getElementById('btn-submit-feedback');
+    const notesInput = document.getElementById('feedback-notes');
+    const formContainer = document.getElementById('feedback-form');
+    const successMsg = document.getElementById('feedback-success');
+
     if (!btnCorrect || document.getElementById('feedback-section')?.classList.contains('hidden')) return;
 
     // Đổ danh sách đổ option mảng option tên bệnh (điền Select menu thả xuống class thực tế)
