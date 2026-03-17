@@ -156,10 +156,22 @@ def generate_gradcam_overlay(
     finally:
         gradcam.remove_hooks()
 
-    # 4. Đổi kích thước (resize) cam để vừa khít với kích thước ảnh gốc
-    cam_resized = cv2.resize(cam, (W, H))
+    # 4. Làm mịn và lọc ngưỡng để Heatmap tập trung hơn (Gaussian Blur + Threshold)
+    # Áp dụng lên CAM kích thước nhỏ trước khi upscaling để tránh răng cưa
+    cam_smoothed = cv2.GaussianBlur(cam, (3, 3), 0)
+    
+    # Lọc ngưỡng (Thresholding): Chỉ giữ lại các vùng có độ kích hoạt trên 0.2
+    # Giúp loại bỏ các vùng "nhiễu" mờ nhạt ở background
+    threshold = 0.2
+    cam_smoothed[cam_smoothed < threshold] = 0
+    # Chuẩn hóa lại sau khi threshold
+    if cam_smoothed.max() > 0:
+        cam_smoothed = cam_smoothed / cam_smoothed.max()
 
-    # 5. Áp dụng bản đồ màu (JET: xanh dương=thấp, đỏ=chú ý cao)
+    # 5. Đổi kích thước (resize) cam với INTER_CUBIC để mượt mà hơn
+    cam_resized = cv2.resize(cam_smoothed, (W, H), interpolation=cv2.INTER_CUBIC)
+
+    # 6. Áp dụng bản đồ màu (JET: xanh dương=thấp, đỏ=chú ý cao)
     heatmap = cv2.applyColorMap(
         np.uint8(255 * cam_resized),
         cv2.COLORMAP_JET

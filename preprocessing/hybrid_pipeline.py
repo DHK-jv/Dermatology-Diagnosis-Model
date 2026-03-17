@@ -58,7 +58,8 @@ class ImagePreprocessingPipeline:
         new_w, new_h = int(w * scale), int(h * scale)
         
         # Resize image
-        resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        # Resize image using LANCZOS4 for maximum sharpness
+        resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
         
         # Create black canvas and paste resized image in center
         canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
@@ -111,6 +112,22 @@ class ImagePreprocessingPipeline:
         except Exception:
             return image
 
+    def sharpen_image(self, image, sigma=1.0, strength=0.8):
+        """
+        Apply Unsharp Mask sharpening filter to enhance texture details.
+        """
+        if image is None or image.size == 0:
+            return image
+            
+        try:
+            # Create a blurred version of the image
+            blurred = cv2.GaussianBlur(image, (0, 0), sigma)
+            # Add back the high-frequency components
+            sharpened = cv2.addWeighted(image, 1.0 + strength, blurred, -strength, 0)
+            return sharpened
+        except Exception:
+            return image
+
     def pixel_normalization(self, image):
         """Normalize pixel values to [0, 1]."""
         image_float = image.astype(np.float32)
@@ -138,7 +155,12 @@ class ImagePreprocessingPipeline:
         if return_steps:
             steps['resized'] = img_resized.copy()
 
-        final_img = self.pixel_normalization(img_resized)
+        # Added Sharpening step for high-frequency detail enhancement
+        img_sharpened = self.sharpen_image(img_resized)
+        if return_steps:
+            steps['sharpened'] = img_sharpened.copy()
+
+        final_img = self.pixel_normalization(img_sharpened)
         if return_steps:
             steps['normalized'] = final_img.copy()
             return final_img, steps
