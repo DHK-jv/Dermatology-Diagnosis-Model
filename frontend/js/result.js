@@ -496,7 +496,7 @@ function setupFeedback() {
     const formContainer = document.getElementById('feedback-form');
     const successMsg = document.getElementById('feedback-success');
 
-    if (!btnCorrect || document.getElementById('feedback-section')?.classList.contains('hidden')) return;
+    if (!btnCorrect) return;
 
     // Đổ danh sách đổ option mảng option tên bệnh (điền Select menu thả xuống class thực tế)
     Object.keys(DISEASE_NAMES).forEach(code => {
