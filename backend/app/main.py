@@ -56,12 +56,19 @@ app = FastAPI(
 # Gắn thư mục uploads để phục vụ ảnh tĩnh
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Cấu hình CORS - Cho phép tất cả các nguồn trong quá trình phát triển
-# LƯU Ý: Trong môi trường production, hãy thay thế "*" bằng danh sách cụ thể
+# Cấu hình CORS - Chỉ cho phép các nguồn được xác định trong production
+import os
+_cors_origins_env = os.environ.get("ALLOWED_ORIGINS", "https://khangjv.id.vn")
+_cors_origins = (
+    [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+    if _cors_origins_env
+    else ["*"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cho phép tất cả các nguồn
-    allow_credentials=False,  # Phải là False khi allow_origins là "*"
+    allow_origins=_cors_origins,
+    allow_credentials=False if "*" in _cors_origins else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -175,15 +182,15 @@ async def shutdown_event():
     logger.info("Shutting down application")
 
 
-@app.get("/", tags=["Root"])
-async def root():
-    """Endpoint gốc"""
-    return {
-        "message": "MedAI Dermatology API",
-        "version": settings.VERSION,
-        "docs": "/docs",
-        "health": "/health"
-    }
+# @app.get("/", tags=["Root"])
+# async def root():
+#     """Endpoint gốc"""
+#     return {
+#         "message": "MedAI Dermatology API",
+#         "version": settings.VERSION,
+#         "docs": "/docs",
+#         "health": "/health"
+#     }
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
@@ -487,6 +494,14 @@ async def preview_preprocessing(file: UploadFile = File(..., description="Ảnh 
         
         # Hàm hỗ trợ mã hóa ảnh thành luồng dữ liệu
         def encode_image(img_arr):
+            if img_arr is None:
+                return ""
+            
+            # Đảm bảo là numpy array
+            if not isinstance(img_arr, np.ndarray):
+                img_arr = np.array(img_arr)
+                
+            # Xử lý kiểu dữ liệu float [0, 1]
             if img_arr.dtype == np.float32 or img_arr.dtype == np.float64:
                 if img_arr.max() <= 1.05:
                      img_arr = (img_arr * 255).astype(np.uint8)
@@ -495,7 +510,15 @@ async def preview_preprocessing(file: UploadFile = File(..., description="Ảnh 
             else:
                 img_arr = img_arr.astype(np.uint8)
             
-            # Chuyển đổi hệ màu RGB sang BGR
+            # Xử lý số kênh màu
+            if len(img_arr.shape) == 2:
+                # Ảnh xám -> RGB
+                img_arr = cv2.cvtColor(img_arr, cv2.COLOR_GRAY2RGB)
+            elif len(img_arr.shape) == 3 and img_arr.shape[2] == 4:
+                # RGBA -> RGB
+                img_arr = cv2.cvtColor(img_arr, cv2.COLOR_RGBA2RGB)
+            
+            # Chuyển đổi hệ màu RGB sang BGR để OpenCV imencode đúng
             img_bgr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
             
             # Mã hóa sang dạng jpeg
@@ -658,12 +681,26 @@ async def gradcam(
         )
 
 
+# Gắn thư mục frontend để phục vụ ứng dụng web (Đặt ở cuối cùng để không chặn các route API)
+import os
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    logger.info(f"✓ Frontend mounted from {frontend_path}")
+else:
+    # Trường hợp chạy trong Docker (path /app/frontend)
+    docker_frontend = "/app/frontend"
+    if os.path.exists(docker_frontend):
+        app.mount("/", StaticFiles(directory=docker_frontend, html=True), name="frontend")
+        logger.info(f"✓ Frontend mounted from {docker_frontend}")
+
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=port,
+        reload=False if os.environ.get("PORT") else True,
         log_level="info"
     )
