@@ -13,14 +13,14 @@ Tài liệu này hướng dẫn cách cài đặt, cấu hình và sử dụng h
 - Không bắt buộc có GPU trên môi trường chạy server (vì mô hình có thể suy luận bằng CPU)
 
 ## 2. Chuẩn bị Mô hình (Weights)
-Hệ thống sử dụng mô hình AI được tinh chỉnh từ EfficientNet-B4. Do kích thước tệp lớn (khoảng 71MB), trọng số (weights) không được đính kèm trong repository. Bạn cần tải file này trước khi khởi động dự án:
+Hệ thống sử dụng mô hình AI (EfficientNet-B4) và mô hình phân đoạn (YOLOv8-seg). 
 
-1. **Tải tệp trọng số**: `efficientnet_b4_derma_v2_1_finetuned.pth`
-   - [Đường dẫn Google Drive](https://drive.google.com/file/d/1O4QKvJgp8FxHhzz8KSM-Gs0xv3aR57-y/view?usp=drive_link)
-2. **Vị trí thư mục**: Đặt tệp tin vừa tải về theo đường dẫn chính xác như sau:
-   `backend/ml_models/efficientnet_b4_derma_v2_1_finetuned.pth`
+**Tất cả các tệp trọng số (weights) cần thiết đã được đính kèm sẵn trong repository tại:**
+`backend/ml_models/`
 
-*(Ghi chú: File YOLOv8-seg.pt dùng để cắt ảnh đã tự động được hệ thống cấu hình sẵn).*
+Bạn không cần phải tải thêm từ nguồn bên ngoài. Hệ thống sẽ tự động nhận diện các file:
+- `efficientnet_b4_derma_v3_0.pth` (Mô hình chính V3.0)
+- `yolov8n-seg.pt` (Mô hình phân đoạn vùng tổn thương)
 
 ### 2.1 Cấu hình Biến môi trường (.env)
 Để tối ưu hóa bộ nhớ trên môi trường Cloud (Render), hãy chú ý các biến sau:
