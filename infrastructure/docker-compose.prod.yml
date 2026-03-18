@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
 
     environment:
-      - API_BASE_URL=${API_BASE_URL:-https://dermatology-diagnosis-model.onrender.com}
+      - API_BASE_URL=${API_BASE_URL:-https://hoangkhang2-medai-dermatology.hf.space}
 
     volumes:
       - ./nginx/nginx_frontend_only.conf:/etc/nginx/conf.d/default.conf:ro
