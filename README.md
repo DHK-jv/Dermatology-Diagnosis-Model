@@ -1,9 +1,12 @@
 # BÁO CÁO TỔNG KẾT ĐỒ ÁN 2
-# 🏥 MEDAI DERMATOLOGY: HỆ THỐNG TRÍ TUỆ NHÂN TẠO CHẨN ĐOÁN BỆNH LÝ DA LIỄU
+# 🏥 MEDAI DERMATOLOGY: HỆ THỐNG AI HỖ TRỢ CHẨN ĐOÁN BỆNH LÝ DA LIỄU TỪ ẢNH DA
 
 > **Tác giả:** Dương Hoàng Khang - 223952 - DH22KPM01  
-> **Ngành / Chuyên ngành:** Kỹ thuật Phần mềm (Software Engineering)
+> **Chuyên ngành:** Kỹ thuật Phần mềm (Software Engineering)
 > **Ứng dụng công nghệ:** Deep Learning (Học Sâu), Xử lý Phân đoạn Ảnh (Image Segmentation), FastAPI & KIến trúc Microservices.
+
+
+## Đường dẫn file báo cáo: research/reports/Bao_cao_do_an_2.docx
 
 ---
 
