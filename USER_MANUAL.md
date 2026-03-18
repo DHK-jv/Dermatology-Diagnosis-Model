@@ -22,6 +22,12 @@ Hệ thống sử dụng mô hình AI được tinh chỉnh từ EfficientNet-B4
 
 *(Ghi chú: File YOLOv8-seg.pt dùng để cắt ảnh đã tự động được hệ thống cấu hình sẵn).*
 
+### 2.1 Cấu hình Biến môi trường (.env)
+Để tối ưu hóa bộ nhớ trên môi trường Cloud (Render), hãy chú ý các biến sau:
+- `TORCH_THREADS=1`: Giới hạn luồng CPU để tiết kiệm RAM.
+- `PREPROCESSING_MODE=auto`: Tự động chọn luồng xử lý tối ưu.
+- `MODEL_PATH`: Đường dẫn tới file trọng số.
+
 ---
 
 ## 3. Cài đặt bằng Docker (Giải pháp khuyên dùng)
@@ -38,9 +44,15 @@ Tất cả Frontend, Backend, AI model và preprocessing chạy cục bộ. Ngin
 4. Đợi quá trình build hoàn tất (khoảng 2-5 phút).
 5. Truy cập: `http://localhost`.
 
-### 3.2. Production (Frontend Only)
-Chỉ triển khai frontend. Backend chạy trên Render và frontend gọi trực tiếp API Render.
+### 3.2. Native Cloud (Render Optimization)
+Để tiết kiệm RAM (tránh tràn 512MB bộ nhớ), MedAI hỗ trợ chạy trực tiếp trên môi trường Python Native của Render thay vì Docker.
 
+1. **Build Command**: `bash backend/render-build.sh`
+2. **Start Command**: `gunicorn --chdir backend -w 1 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:$PORT`
+3. **PYTHONPATH**: `.` (để nhận diện module preprocessing).
+
+### 3.3. Production Docker (Frontend Only)
+Chỉ triển khai frontend. Backend chạy trên Render và frontend gọi trực tiếp API Render.
 1. Trên VPS/Server production, chạy:
    ```bash
    docker compose -f infrastructure/docker-compose.prod.yml up -d --build
@@ -101,5 +113,7 @@ Nếu muốn đúng kiến trúc local (Nginx reverse proxy), dùng cấu hình:
    - Tải lên (Upload) bức ảnh da liễu cần chẩn đoán. Khuyến khích chụp trực diện, rõ nét, khu vực có ánh sáng tốt.
    - Nhấn "Phân tích AI". Hệ thống sẽ xử lý qua luồng tiền xử lý (Cắt ảnh YOLO, Tẩy lông DullRazor) và dự đoán bằng EfficientNet.
    - Kết quả trả về gồm: Tên bệnh, Độ tin cậy (Confidence), độ nguy hiểm của bệnh, và một hình ảnh "Bản đồ Nhiệt (Grad-CAM)" để giải thích vùng da AI đang tập trung quan sát.
+   - **Cải tiến mới:** Ảnh chẩn đoán hiện đã được xử lý qua bộ lọc sắc nét (Lanczos4 + Sharpening) giúp bác sĩ quan sát rõ hơn các chi tiết biểu bì. Grad-CAM cũng được tối ưu hóa để tập trung chính xác vào vùng bệnh, không bị lan ra vùng da lành.
 3. **Lịch sử**: Kiểm tra lại toàn bộ ảnh đã từng được chẩn đoán.
-4. **Dashboard Admin**: (Nếu có tài khoản quản trị). Truy cập để xem các số liệu thống kê về tần suất phát sinh các ca chẩn đoán ung thư, biểu đồ theo tuần/tháng.
+4. **Phản hồi chuyên môn**: Admin và Bác sĩ có thể nhấn vào nút "Đúng/Sai" tại trang kết quả để cung cấp Feedback cho hệ thống, giúp cải thiện mô hình trong tương lai.
+5. **Dashboard Admin**: (Nếu có tài khoản quản trị). Truy cập để xem các số liệu thống kê về tần suất phát sinh các ca chẩn đoán ung thư, biểu đồ theo tuần/tháng.
