@@ -27,11 +27,11 @@ const API_CONFIG = {
         // ── 1. Local Development: localhost/127.0.0.1 ──
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             const inferredPort = port || (protocol === 'https:' ? '443' : '80');
-            const nginxPorts = new Set(['80', '8080']);
+            const nginxPorts = new Set(['80', '8080', '7860']);
 
-            // Nếu chạy qua Nginx (port 80/8080) → dùng đường dẫn tương đối để proxy nội bộ
+            // Nếu chạy qua Nginx hoặc Docker Unified (port 80/8080/7860) → dùng đường dẫn tương đối
             if (nginxPorts.has(inferredPort)) {
-                console.log('[Config] Environment: Local Nginx Proxy (Relative path)');
+                console.log('[Config] Environment: Unified/Proxy (Relative path)');
                 return '';
             }
 
@@ -42,10 +42,10 @@ const API_CONFIG = {
 
         // ── 2. Custom Domain: khangjv.id.vn (Dual support) ──
         if (hostname === 'khangjv.id.vn' || hostname === 'www.khangjv.id.vn') {
-            // Nếu dùng HTTPS -> Chắc chắn là Render Production
+            // Nếu dùng HTTPS -> backend ở Hugging Face Spaces
             if (protocol === 'https:') {
-                console.log('[Config] Environment: Production (Render Cloud)');
-                return 'https://dermatology-diagnosis-model.onrender.com';
+                console.log('[Config] Environment: Production (Hugging Face Backend)');
+                return 'https://hoangkhang2-medai-dermatology.hf.space';
             }
             
             // Nếu dùng HTTP -> Đang test Nginx localhost (Proxy qua Nginx)
@@ -53,10 +53,16 @@ const API_CONFIG = {
             return ''; 
         }
 
-        // ── 3. Render URL trực tiếp ──
+        // —— 3. Hugging Face Spaces với domain custom ——
+        if (hostname.endsWith('.hf.space') || hostname === 'hoangkhang2-medai-dermatology.hf.space') {
+            console.log('[Config] Environment: Hugging Face Spaces (Relative path)');
+            return '';
+        }
+
+        // Trường hợp cũ - Render URL trực tiếp
         if (hostname.endsWith('.onrender.com')) {
             console.log('[Config] Environment: Render Subdomain');
-            return 'https://dermatology-diagnosis-model.onrender.com';
+            return '';
         }
 
         // Mặc định: Dùng relative path cho các trường hợp khác
