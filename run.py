@@ -7,7 +7,6 @@ import platform
 from pathlib import Path
 
 # --- CẤU HÌNH ---
-# Tự động phát hiện đường dẫn gốc của dự án
 BASE_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = BASE_DIR / "backend"
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -63,21 +62,15 @@ def check_and_create_venv():
 def check_and_install_requirements():
     """Cài đặt thư viện vào trong venv"""
     venv_python = get_venv_python()
-    req_file_backend = BACKEND_DIR / "requirements.txt"
-    # Root requirements (nếu có)
-    req_file_root = BASE_DIR / "requirements.txt" 
-    
-    target_req = req_file_backend if req_file_backend.exists() else req_file_root
+    req_file = BACKEND_DIR / "requirements.txt"
 
-    if not target_req.exists():
-        log("Không tìm thấy file requirements.txt (cả root và backend).", "error")
+    if not req_file.exists():
+        log("Không tìm thấy file backend/requirements.txt.", "error")
         return
 
     log("Đang kiểm tra và cài đặt thư viện (trong .venv)...")
     try:
-        # Cài đặt requirements (bỏ qua bước upgrade pip để tránh treo)
-        # Cho hiện output để user biết tiến trình
-        subprocess.check_call([str(venv_python), "-m", "pip", "install", "-r", str(target_req)])
+        subprocess.check_call([str(venv_python), "-m", "pip", "install", "-r", str(req_file)])
         log("Cài đặt thư viện hoàn tất.", "success")
     except subprocess.CalledProcessError as e:
         log(f"Lỗi khi cài đặt thư viện: {e}", "error")
@@ -95,7 +88,6 @@ def run_system():
         # 2. Start Backend
         log(f"Đang khởi động Backend server (Port {BACKEND_PORT})...")
         
-        # Lệnh chạy uvicorn từ venv
         backend_cmd = [
             str(venv_python), "-m", "uvicorn", 
             "app.main:app", 
@@ -104,10 +96,10 @@ def run_system():
             "--port", str(BACKEND_PORT)
         ]
         
-        # Chạy backend
-        # cwd=BACKEND_DIR để nó import đúng app.main
+        # Set PYTHONPATH để backend có thể import module preprocessing
         env = os.environ.copy()
-        # Đảm bảo python path thấy module
+        env["PYTHONPATH"] = str(BASE_DIR)
+        
         backend_process = subprocess.Popen(backend_cmd, cwd=BACKEND_DIR, env=env)
         processes.append(backend_process)
         
@@ -116,17 +108,18 @@ def run_system():
 
         # 3. Start Frontend
         log(f"Đang khởi động Frontend server (Port {FRONTEND_PORT})...")
-        # Python HTTP server đơn giản
         frontend_cmd = [str(venv_python), "-m", "http.server", str(FRONTEND_PORT)]
         
         frontend_process = subprocess.Popen(frontend_cmd, cwd=FRONTEND_DIR)
         processes.append(frontend_process)
 
-        print("\n" + "="*40)
+        print("\n" + "="*50)
         log("✅ HỆ THỐNG ĐÃ SẴN SÀNG SỬ DỤNG!", "success")
-        log(f"👉 Backend API:  http://localhost:{BACKEND_PORT}")
-        log(f"👉 Frontend Web: http://localhost:{FRONTEND_PORT}")
-        print("="*40 + "\n")
+        log(f"👉 Backend API:    http://localhost:{BACKEND_PORT}")
+        log(f"👉 API Swagger:    http://localhost:{BACKEND_PORT}/docs")
+        log(f"👉 Frontend Web:   http://localhost:{FRONTEND_PORT}")
+        print("="*50 + "\n")
+        log("📌 Frontend sẽ gọi API tới localhost:8000 (xem config.js)")
         log("🛑 Nhấn Ctrl+C để dừng toàn bộ hệ thống.")
 
         # Tự động mở trình duyệt
@@ -145,7 +138,6 @@ def run_system():
     except Exception as e:
         log(f"Lỗi không mong muốn: {e}", "error")
     finally:
-        # Dọn dẹp process khi tắt
         log("Đang dọn dẹp tiến trình...", "info")
         for p in processes:
             try:
@@ -155,7 +147,7 @@ def run_system():
         log("Tạm biệt! 👋", "success")
 
 if __name__ == "__main__":
-    if not sys.version_info >= (3, 8):
-        print("Vui lòng sử dụng Python 3.8 trở lên.")
+    if not sys.version_info >= (3, 10):
+        print("Vui lòng sử dụng Python 3.10 trở lên.")
         sys.exit(1)
     run_system()
