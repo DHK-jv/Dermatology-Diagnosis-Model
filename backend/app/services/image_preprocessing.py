@@ -1,6 +1,10 @@
 """
 Dịch vụ tiền xử lý ảnh
 Xử lý việc kiểm tra, thay đổi kích thước và chuẩn hóa ảnh cho đầu vào mô hình
+
+FIX LOG:
+- BUG #5: Luôn lưu ảnh gốc (original_raw) vào steps trước khi bất kỳ resize nào xảy ra
+- BUG #6: Thêm retry logic sau khoảng thời gian chờ thay vì chặn vĩnh viễn
 """
 from PIL import Image
 import numpy as np
@@ -9,6 +13,7 @@ from typing import Tuple, Optional
 import io
 import threading
 import asyncio
+import time
 
 from ..config import settings
 
@@ -16,14 +21,16 @@ from ..config import settings
 # Hằng số nội bộ
 # ---------------------------------------------------------------------------
 _NORMALIZE_THRESHOLD = 1.05   # Ngưỡng phân biệt ảnh đã normalize [0,1] hay chưa
+_PIPELINE_RETRY_INTERVAL = 300  # ✅ FIX BUG #6: Cho phép retry sau 5 phút
 
 
 # ---------------------------------------------------------------------------
 # Singleton pipeline (module-level cache + thread-safe lock)
 # ---------------------------------------------------------------------------
 _pipeline_lock = threading.Lock()
-_cached_pipeline = None          # Pipeline dùng chung cho mọi request
-_pipeline_load_attempted = False # Tránh retry vô hạn nếu load thất bại
+_cached_pipeline = None
+_pipeline_load_attempted = False
+_pipeline_last_failure_time = 0.0  # ✅ FIX BUG #6: Theo dõi thời điểm thất bại
 
 
 def _get_pipeline():
@@ -32,24 +39,31 @@ def _get_pipeline():
 
     - Lần đầu: load YOLO model vào RAM, cache lại trong `_cached_pipeline`.
     - Các lần sau: trả về ngay, không tốn thêm ~3s load model.
-    - Nếu load thất bại một lần, đánh dấu `_pipeline_load_attempted = True`
-      để không retry mỗi request (tránh log spam + chậm).
+    - ✅ FIX BUG #6: Nếu load thất bại, cho phép retry sau _PIPELINE_RETRY_INTERVAL giây
+      thay vì chặn vĩnh viễn (tránh trường hợp lỗi tạm thời khi khởi động server).
     """
-    global _cached_pipeline, _pipeline_load_attempted
+    global _cached_pipeline, _pipeline_load_attempted, _pipeline_last_failure_time
 
     # Fast-path: pipeline đã sẵn sàng
     if _cached_pipeline is not None:
         return _cached_pipeline
 
-    # Slow-path: chỉ một thread được phép khởi tạo tại một thời điểm
     with _pipeline_lock:
-        # Double-checked locking: kiểm tra lại sau khi có lock
+        # Double-checked locking
         if _cached_pipeline is not None:
             return _cached_pipeline
 
         if _pipeline_load_attempted:
-            # Đã thất bại trước đó → không thử lại
-            return None
+            # ✅ FIX BUG #6: Cho phép retry sau khoảng thời gian chờ
+            elapsed = time.time() - _pipeline_last_failure_time
+            if elapsed < _PIPELINE_RETRY_INTERVAL:
+                remaining = int(_PIPELINE_RETRY_INTERVAL - elapsed)
+                print(f"⏳ Pipeline load skipped (failed {int(elapsed)}s ago, retry in {remaining}s)")
+                return None
+            else:
+                # Reset để thử lại
+                print("🔄 Retrying pipeline load after previous failure...")
+                _pipeline_load_attempted = False
 
         _pipeline_load_attempted = True
         try:
@@ -65,8 +79,12 @@ def _get_pipeline():
                 yolo_model_path=str(yolo_model_path) if yolo_model_path.exists() else None,
                 device='cpu',
             )
+            # ✅ Reset thời gian thất bại sau khi load thành công
+            _pipeline_last_failure_time = 0.0
+            _pipeline_load_attempted = False
             print("✅ HybridPreprocessingPipeline loaded and cached.")
         except Exception as e:
+            _pipeline_last_failure_time = time.time()
             print(f"⚠️  Failed to load HybridPreprocessingPipeline: {e}")
             _cached_pipeline = None
 
@@ -77,10 +95,8 @@ def release_pipeline() -> None:
     """
     Giải phóng pipeline khỏi RAM (dùng khi shutdown server hoặc khi cần
     thu hồi bộ nhớ theo yêu cầu vận hành).
-
-    Không nên gọi trong flow xử lý request thông thường.
     """
-    global _cached_pipeline, _pipeline_load_attempted
+    global _cached_pipeline, _pipeline_load_attempted, _pipeline_last_failure_time
     import gc
 
     with _pipeline_lock:
@@ -90,6 +106,7 @@ def release_pipeline() -> None:
             del _cached_pipeline
             _cached_pipeline = None
             _pipeline_load_attempted = False
+            _pipeline_last_failure_time = 0.0
             gc.collect()
             print("🧹 Pipeline released from memory.")
 
@@ -108,7 +125,6 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
     Returns:
         Tuple (is_valid, error_message)
     """
-    # Kiểm tra đuôi mở rộng
     extension = filename.lower().rsplit('.', 1)[-1]
     if extension not in settings.ALLOWED_EXTENSIONS:
         return False, (
@@ -116,13 +132,10 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
             f"Chỉ chấp nhận: {', '.join(settings.ALLOWED_EXTENSIONS)}"
         )
 
-    # Kiểm tra kích thước file
     file_size_mb = len(file_content) / (1024 * 1024)
     if file_size_mb > settings.MAX_IMAGE_SIZE_MB:
         return False, f"File quá lớn. Kích thước tối đa: {settings.MAX_IMAGE_SIZE_MB}MB"
 
-    # Xác minh nội dung thực sự là ảnh
-    # Lưu ý: img.verify() làm file handle không dùng được nữa → mở riêng
     try:
         with Image.open(io.BytesIO(file_content)) as img:
             img.verify()
@@ -148,34 +161,44 @@ def _ensure_batch_scale(batch: np.ndarray) -> np.ndarray:
     return batch
 
 
-def _fallback_preprocess(img_np: np.ndarray, return_steps: bool):
+def _fallback_preprocess(img_np: np.ndarray, return_steps: bool, original_np: np.ndarray = None, enhancement_enabled: bool = False):
     """
-    Tiền xử lý dự phòng cưỡng bức: sử dụng HybridPreprocessingPipeline ở chế độ 'none'
-    để thực hiện resize vuông (padding đen) thay vì kéo giãn ảnh (PIL stretch).
+    Tiền xử lý dự phòng: resize vuông (padding đen) bằng HybridPreprocessingPipeline mode 'none'.
+
+    ✅ FIX BUG #5: Nhận thêm original_np để lưu vào steps['original_raw']
     """
     try:
         from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
-        # Khởi tạo pipeline "nhẹ" chỉ để resize
         fallback_pipeline = HybridPreprocessingPipeline(
-            mode='opencv', # Không dùng YOLO
+            mode='opencv',
             target_size=settings.IMAGE_SIZE
         )
-        # Chèn mask=None để kích hoạt resize-only
         if return_steps:
-            result, steps = fallback_pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=True)
+            result, steps = fallback_pipeline.opencv_pipeline.process(
+                img_np, mask=None, return_steps=True, enhancement_enabled=enhancement_enabled
+            )
             result_batch = _ensure_batch_scale(np.expand_dims(result, axis=0))
             normalized_steps = {k: _normalize_to_uint8(v) for k, v in steps.items()}
+            # ✅ FIX BUG #5: Luôn lưu ảnh gốc vào steps để GradCAM dùng
+            if original_np is not None:
+                normalized_steps['original_raw'] = original_np.copy()
             return result_batch, normalized_steps
         else:
-            result = fallback_pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=False)
+            result = fallback_pipeline.opencv_pipeline.process(
+                img_np, mask=None, return_steps=False, enhancement_enabled=enhancement_enabled
+            )
             return _ensure_batch_scale(np.expand_dims(result, axis=0))
     except Exception as e:
         print(f"⚠️ Fallback pipeline failed: {e}. Last resort: PIL resize.")
-        # Trường hợp xấu nhất: dùng lại logic cũ (dễ bị stretch)
         img = Image.fromarray(img_np)
         img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
         img_array = np.array(img_resized, dtype=np.float32)
         result_batch = np.expand_dims(img_array, axis=0)
+        if return_steps:
+            steps = {'resized': img_array.astype(np.uint8)}
+            if original_np is not None:
+                steps['original_raw'] = original_np.copy()
+            return result_batch, steps
         return result_batch
 
 
@@ -187,42 +210,50 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False, preprocessi
     Tiền xử lý ảnh toàn diện.
 
     Args:
-        image_bytes:  Dữ liệu ảnh thô (bytes)
-        return_steps: Nếu True, trả về thêm dict các bước trung gian
-        preprocessing_enabled: Nếu False, bỏ qua các bước nâng cao (Hair removal/Segment), chỉ resize.
+        image_bytes:           Dữ liệu ảnh thô (bytes)
+        return_steps:          Nếu True, trả về thêm dict các bước trung gian
+        preprocessing_enabled: Nếu False, bỏ qua các bước nâng cao, chỉ resize.
 
     Returns:
         np.ndarray batch shape (1, H, W, 3), pixel [0,255]  — hoặc
         Tuple(batch, steps_dict) nếu return_steps=True
+
+    ✅ FIX BUG #5: steps luôn chứa 'original_raw' là ảnh gốc chưa qua resize
+                   để GradCAM có thể overlay lên ảnh gốc thực sự.
     """
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode != 'RGB':
         img = img.convert('RGB')
     img_np = np.array(img)
 
-    # Nếu tắt tiền xử lý (hoặc mode='none'), dùng fallback (chỉ resize vuông)
+    # ✅ FIX BUG #5: Lưu ảnh gốc TRƯỚC BẤT KỲ bước nào (kể cả limit_resolution)
+    original_np = img_np.copy()
+
+    # Nếu tắt tiền xử lý → fallback resize-only (nhưng vẫn kèm original_raw)
     if not preprocessing_enabled or settings.PREPROCESSING_MODE.lower() == "none":
-        return _fallback_preprocess(img_np, return_steps)
+        return _fallback_preprocess(img_np, return_steps, original_np=original_np)
 
     pipeline = _get_pipeline()
 
     if pipeline is None:
         print("⚠️  Pipeline unavailable, falling back to resize-only.")
-        return _fallback_preprocess(img_np, return_steps)
+        return _fallback_preprocess(img_np, return_steps, original_np=original_np)
 
     try:
         if return_steps:
-            result, steps = pipeline.process(img_np, return_steps=True, verbose=False, enhancement_enabled=preprocessing_enabled)
+            result, steps = pipeline.process(img_np, return_steps=True, enhancement_enabled=preprocessing_enabled)
             result_batch = _ensure_batch_scale(np.expand_dims(result, axis=0))
-            normalized_steps = {k: _normalize_to_uint8(v) for k, v in steps.items()}
+            normalized_steps = {k: _normalize_to_uint8(v) if isinstance(v, np.ndarray) else v for k, v in steps.items()}
+            # ✅ FIX BUG #5: Gắn ảnh gốc vào steps
+            normalized_steps['original_raw'] = original_np
             return result_batch, normalized_steps
         else:
-            result = pipeline.process(img_np, return_steps=False, verbose=False, enhancement_enabled=preprocessing_enabled)
+            result = pipeline.process(img_np, return_steps=False, enhancement_enabled=preprocessing_enabled)
             return _ensure_batch_scale(np.expand_dims(result, axis=0))
 
     except Exception as e:
         print(f"❌ Pipeline execution failed: {e}. Falling back to resize-only.")
-        return _fallback_preprocess(img_np, return_steps)
+        return _fallback_preprocess(img_np, return_steps, original_np=original_np)
 
 
 async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:
@@ -244,5 +275,4 @@ async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:
         img.save(filepath, 'JPEG', quality=95)
         return filepath
 
-    # Chạy I/O blocking trong thread pool để không block event loop
     return await asyncio.to_thread(_write)

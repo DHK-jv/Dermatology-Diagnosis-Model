@@ -271,7 +271,8 @@ async def predict(
 
         # Tiền xử lý + dự đoán
         logger.info(f"Preprocessing image for {diagnosis_id} (enabled={preprocessing})")
-        preprocessed_img = preprocess_image(file_content, preprocessing_enabled=preprocessing)
+        preprocessed_img, steps = preprocess_image(file_content, return_steps=True, preprocessing_enabled=preprocessing)
+        crop_box = steps.get('crop_box') # [x1, y1, x2, y2] if cropped
 
         logger.info(f"Running AI prediction for {diagnosis_id}")
         predicted_class, confidence, all_predictions, critical_warning = model_service.predict(
@@ -307,6 +308,7 @@ async def predict(
             },
             critical_warning=critical_warning,
             preprocessing_applied=preprocessing,
+            crop_box=crop_box,
             timestamp=datetime.now(),
         )
 
@@ -544,7 +546,18 @@ async def gradcam(
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        logger.info(f"GradCAM: preprocessing {file.filename} (enabled={preprocessing})")
+        # ✅ FIX BUG #2: Lưu ảnh gốc TRƯỚC khi bất kỳ bước preprocess nào chạy.
+        # Ảnh gốc này sẽ được dùng để overlay heatmap lên đúng vị trí thực tế,
+        # không phải ảnh đã bị crop/resize/letterbox bởi pipeline.
+        from PIL import Image as _PIL_Image
+        import io as _io
+        _raw_pil = _PIL_Image.open(_io.BytesIO(file_content))
+        if _raw_pil.mode != 'RGB':
+            _raw_pil = _raw_pil.convert('RGB')
+        original_img_np = np.array(_raw_pil)  # (H_orig, W_orig, 3) — kích thước thực tế người dùng upload
+        del _raw_pil
+
+        logger.info(f"GradCAM: preprocessing {file.filename} (enabled={preprocessing}), original size={original_img_np.shape[:2]}")
         preprocessed_img, steps = preprocess_image(file_content, return_steps=True, preprocessing_enabled=preprocessing)
 
         # Xác định class mục tiêu
@@ -559,18 +572,29 @@ async def gradcam(
 
         logger.info(f"GradCAM: generating for '{predicted_class_name}' (idx={class_idx})")
 
-        heatmap_b64 = generate_gradcam_overlay(
+        # ✅ FIX BUG #2: Truyền original_img_np → GradCAM sẽ upscale heatmap lên
+        # kích thước ảnh gốc và overlay đúng vị trí, thay vì overlay trên ảnh đã preprocess.
+        crop_box_data = steps.get('crop_box')
+        
+        # ✅ FIX: Khớp đúng tham số        # ✅ V3.0: Lấy danh sách tên bệnh để phân tích Top-K
+        from app.utils.medical_terms import MEDICAL_TERMS
+        class_names = [v.get('en', k) for k, v in MEDICAL_TERMS.items()]
+
+        # Generate Grad-CAM overlay (Hỗ trợ Geometric Coordinate mapping)
+        heatmap_uri, analysis_dict = generate_gradcam_overlay(
             model=model_service._model,
-            image_array=preprocessed_img,
-            device=model_service._device,
-            class_idx=class_idx,
-            mask=steps.get('mask_final')
+            img_preprocessed=preprocessed_img,
+            original_for_display=original_img_np,
+            target_class=class_idx,
+            mask=steps.get('mask_final'),
+            crop_box=crop_box_data,
+            class_names=class_names, # ✅ V3.0 New feature
+            layer_offset=layer_offset, # ✅ V3.0 New feature
+            comparison_view=True,
+            include_colorbar=False,
         )
 
-        import cv2
-        import base64
-        import numpy as np
-        # Encode original preprocessed image for UI comparison
+        # Encode ảnh preprocessed (kích thước model) để UI có thể so sánh nếu cần
         encode_img = preprocessed_img[0]
         if encode_img.max() <= 1.05:
             encode_img = encode_img * 255.0
@@ -578,14 +602,24 @@ async def gradcam(
         _, buffer = cv2.imencode('.jpg', cv2.cvtColor(encode_img, cv2.COLOR_RGB2BGR))
         preprocessed_b64 = base64.b64encode(buffer).decode('utf-8')
 
-        del file_content, preprocessed_img
+        # Encode ảnh gốc để trả về frontend (panel "Ảnh Gốc" hiển thị đúng)
+        _, orig_buffer = cv2.imencode('.jpg', cv2.cvtColor(original_img_np, cv2.COLOR_RGB2BGR),
+                                      [cv2.IMWRITE_JPEG_QUALITY, 95])
+        original_b64 = base64.b64encode(orig_buffer).decode('utf-8')
+
+        del file_content, preprocessed_img, original_img_np
         gc.collect()
 
         return GradCAMResponse(
-            heatmap_overlay=f"data:image/jpeg;base64,{heatmap_b64}",
+            heatmap_overlay=f"data:image/jpeg;base64,{heatmap_uri}",
             predicted_class=predicted_class_name,
             class_idx=class_idx,
-            preprocessed_image=f"data:image/jpeg;base64,{preprocessed_b64}"
+            # ✅ FIX BUG #2: preprocessed_image vẫn trả về để debug nếu cần,
+            # nhưng UI bây giờ ưu tiên hiển thị original_image làm nền so sánh.
+            preprocessed_image=f"data:image/jpeg;base64,{preprocessed_b64}",
+            # ✅ Thêm trường original_image để frontend luôn có ảnh gốc đúng
+            original_image=f"data:image/jpeg;base64,{original_b64}",
+            analysis=analysis_dict
         )
 
     except HTTPException:

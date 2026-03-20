@@ -254,14 +254,46 @@
                                         Heatmap Overlay</p>
                                     <img id="gradcam-heatmap"
                                         class="w-full rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] object-cover"
-                                        src="" alt="GradCAM Heatmap" style="max-height:300px;object-fit:contain;" />
+                                        src="" alt="Grad-CAM" style="max-height:300px;object-fit:contain;" />
                                 </div>
                             </div>
-                            <p class="text-xs text-[#5e758d] dark:text-gray-500 mt-3 flex items-center gap-1">
+
+                            <!-- New: AI Attention Interpretation Analysis -->
+                            <div id="gradcam-analysis" class="mt-4 p-4 bg-[#f8fafc] dark:bg-[#23303e] rounded-lg border border-[#dae0e7] dark:border-[#2e3e50] hidden">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="material-symbols-outlined text-primary text-lg">psychology</span>
+                                    <span class="text-xs font-bold uppercase tracking-wider text-[#5e758d] dark:text-gray-400">AI Attention Interpretation</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-white/50 dark:bg-black/10 p-2.5 rounded-md">
+                                        <p class="text-[10px] text-[#5e758d] dark:text-gray-400 font-bold uppercase mb-1">Vùng tập trung</p>
+                                        <p class="text-sm font-medium text-[#101418] dark:text-gray-200 leading-tight" data-analysis-focus>-</p>
+                                    </div>
+                                    <div class="bg-white/50 dark:bg-black/10 p-2.5 rounded-md">
+                                        <p class="text-[10px] text-[#5e758d] dark:text-gray-400 font-bold uppercase mb-1">Độ tập trung</p>
+                                        <p class="text-sm font-medium text-[#101418] dark:text-gray-200" data-analysis-intensity>-</p>
+                                    </div>
+                                    <div class="bg-white/50 dark:bg-black/10 p-2.5 rounded-md">
+                                        <p class="text-[10px] text-[#5e758d] dark:text-gray-400 font-bold uppercase mb-1">Mức độ ý nghĩa</p>
+                                        <p class="text-sm font-medium text-[#101418] dark:text-gray-200" data-analysis-significance>-</p>
+                                    </div>
+                                    <div class="bg-white/50 dark:bg-black/10 p-2.5 rounded-md">
+                                        <p class="text-[10px] text-[#5e758d] dark:text-gray-400 font-bold uppercase mb-1">Độ tin cậy AI</p>
+                                        <p class="text-sm font-bold text-primary dark:text-primary-light" data-analysis-confidence>-</p>
+                                    </div>
+                                    <div class="bg-white/50 dark:bg-black/10 p-2.5 rounded-md md:col-span-2">
+                                        <p class="text-[10px] text-[#5e758d] dark:text-gray-400 font-bold uppercase mb-1">Dự đoán phụ (Top-K)</p>
+                                        <p class="text-[13px] font-medium text-[#101418] dark:text-gray-200 leading-relaxed" data-analysis-top-k>-</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-[10px] italic text-[#5e758d] dark:text-gray-500">
+                                    * Phân tích tự động dựa trên mức độ tập trung của Gradient mạng nơ-ron.
+                                </div>
+                            </div>
+
+                            <p class="mt-4 text-xs text-[#5e758d] dark:text-gray-400 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-sm">info</span>
-                                GradCAM được tính dựa trên gradient của class <strong id="gradcam-class-label"
-                                    class="text-primary">-</strong>
-                                qua lớp conv cuối của EfficientNet-B4.
+                                Nhấn vào nút bên dưới để tính lại Grad-CAM cho các loại bệnh khác.
                             </p>
                         </div>
 
@@ -368,11 +400,11 @@
     <!-- JavaScript Files -->
     <script type="module" src="../js/medical-terms.js?v=24classes"></script>
     <script src="../js/runtime-env.js"></script>
-    <script src="../js/config.js?v=6"></script>
-    <script src="../js/utils.js?v=6"></script>
-    <script src="../js/auth.js?v=3"></script>
-    <script src="../js/app.js"></script>
-    <script type="module" src="../js/result.js?v=2"></script>
+    <script src="../js/config.js?v=10"></script>
+    <script src="../js/utils.js?v=10"></script>
+    <script src="../js/auth.js?v=10"></script>
+    <script src="../js/app.js?v=10"></script>
+    <script type="module" src="../js/result.js?v=10"></script>
     </body>
 
 </html>

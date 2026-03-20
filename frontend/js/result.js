@@ -33,6 +33,39 @@ function translateRiskLevel(riskLevel) {
 let currentDiagnosis = null;
 let navigationState = null;
 
+// Placeholder for showError, assuming it's defined elsewhere or needs a basic definition
+function showError(message) {
+    alert(message); // Or use a more sophisticated notification system
+}
+
+/**
+ * Hiệu ứng đánh chữ (Typewriter Effect)
+ * @param {HTMLElement} element - Element cần hiển thị chữ
+ * @param {string} text - Nội dung chữ
+ * @param {number} speed - Tốc độ (ms mỗi ký tự)
+ */
+function typeWriter(element, text, speed = 25) {
+    if (!element || !text) return;
+    
+    element.textContent = '';
+    let i = 0;
+    
+    // Clear any existing interval if attached to element
+    if (element._typeWriterInterval) {
+        clearInterval(element._typeWriterInterval);
+    }
+    
+    element._typeWriterInterval = setInterval(() => {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+        } else {
+            clearInterval(element._typeWriterInterval);
+            element._typeWriterInterval = null;
+        }
+    }, speed);
+}
+
 // Khởi tạo hoạt động khi trình duyệt đã tải trang DOM xong
 document.addEventListener('DOMContentLoaded', async function () {
     console.log('Result page initialized');
@@ -236,7 +269,11 @@ function updateRecommendations(recommendations) {
     if (!recommendations) return;
 
     // Lên bài miêu tả chẩn đoán sơ bộ mô mô tả tình trạng
-    updateElement('[data-recommendation-description]', recommendations.description);
+    const recommendationDescription = document.querySelector('[data-recommendation-description]');
+    if (recommendationDescription) {
+        // Sử dụng hiệu ứng đánh chữ cho phần mô tả chính
+        typeWriter(recommendationDescription, recommendations.description);
+    }
 
     // Update độ nghiêm trọng (khẩn cấp phải xin can thiệp/điều trị)
     updateElement('[data-recommendation-urgency]', recommendations.urgency);
@@ -438,11 +475,16 @@ async function loadGradCAM(diagnosis) {
             formData.append('target_class', diagnosis.predicted_class);
         }
 
-        // Lấy trạng thái tiền xử lý từ Navigation State (đã lưu cache) hoặc URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const preprocessing = (navigationState && navigationState.preprocessing !== undefined)
-            ? navigationState.preprocessing
-            : (urlParams.get('preprocessing') !== 'false');
+        // Ưu tiên trạng thái đã được lưu cứng từ Backend để đảm bảo chính xác tuyệt đối, tránh lỗi F5 mất Navigation State
+        let preprocessing = true;
+        if (diagnosis.preprocessing_applied !== undefined) {
+            preprocessing = diagnosis.preprocessing_applied;
+        } else if (navigationState && navigationState.preprocessing !== undefined) {
+            preprocessing = navigationState.preprocessing;
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            preprocessing = urlParams.get('preprocessing') !== 'false';
+        }
 
         formData.append('preprocessing', preprocessing ? 'true' : 'false');
 
@@ -466,11 +508,56 @@ async function loadGradCAM(diagnosis) {
 
         // Nhận lại và đắp thành phẩm xuất màn ảnh Giao Tiếp UI (Kết quả)
         heatmapImg.src = data.heatmap_overlay;
-        if (data.preprocessed_image) {
-            originalImg.src = data.preprocessed_image;
+
+        // ✅ FIX BUG #1: Panel "Ảnh Gốc" LUÔN hiển thị ảnh gốc của người dùng.
+        // Trước đây: originalImg.src = data.preprocessed_image → hiển thị ảnh đã
+        // qua crop/resize/letterbox, gây ra cảm giác ảnh bị biến dạng mất chi tiết.
+        // Thứ tự ưu tiên:
+        //   1. data.original_image — backend trả về ảnh gốc encode base64 (nguồn chính xác nhất)
+        //   2. imageDataUrl — ảnh gốc từ sessionStorage (người dùng vừa upload)
+        if (data.original_image) {
+            originalImg.src = data.original_image;
         } else {
             originalImg.src = imageDataUrl;
         }
+
+        // data.preprocessed_image vẫn được giữ để hiển thị trong panel debug (nếu có)
+        const preprocessedPanel = document.getElementById('gradcam-preprocessed');
+        if (preprocessedPanel && data.preprocessed_image) {
+            preprocessedPanel.src = data.preprocessed_image;
+        }
+
+        // ✅ NEW: AI Attention Interpretation (From pneumatic project inspiration)
+        const analysisContainer = document.getElementById('gradcam-analysis');
+        if (analysisContainer && data.analysis) {
+            analysisContainer.classList.remove('hidden');
+            const focusEl = document.querySelector('[data-analysis-focus]');
+            const intensityEl = document.querySelector('[data-analysis-intensity]');
+            const significanceEl = document.querySelector('[data-analysis-significance]');
+            
+            if (focusEl) {
+                // Hiệu ứng đánh chữ cho phần phân tích vùng tập trung
+                typeWriter(focusEl, data.analysis.focus || '-');
+            }
+            if (intensityEl) intensityEl.textContent = data.analysis.intensity || '-';
+            if (significanceEl) significanceEl.textContent = data.analysis.significance || '-';
+
+            // ✅ V3.0 New: Confidence & Top-K
+            const confidenceEl = document.querySelector('[data-analysis-confidence]');
+            const topKEl = document.querySelector('[data-analysis-top-k]');
+
+            if (confidenceEl) {
+                confidenceEl.textContent = data.analysis.confidence || '-';
+            }
+
+            if (topKEl && data.analysis.top_predictions) {
+                const topKText = data.analysis.top_predictions
+                    .map(p => `${p.class_name} (${(p.probability * 100).toFixed(1)}%)`)
+                    .join(', ');
+                typeWriter(topKEl, topKText);
+            }
+        }
+
         if (classLabel) classLabel.textContent = data.predicted_class;
 
         loading.classList.add('hidden');

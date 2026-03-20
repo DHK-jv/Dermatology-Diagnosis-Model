@@ -81,7 +81,8 @@ class StorageService:
             "critical_warning": prediction.critical_warning,
             "timestamp": prediction.timestamp.isoformat(),
             "image_filename": f"{prediction.diagnosis_id}.jpg",
-            "has_feedback": getattr(prediction, 'has_feedback', False)
+            "has_feedback": getattr(prediction, 'has_feedback', False),
+            "crop_box": prediction.crop_box
         }
         
         if self.use_mongodb:
@@ -133,7 +134,8 @@ class StorageService:
                         timestamp=datetime.fromisoformat(r["timestamp"]) if isinstance(r["timestamp"], str) else r["timestamp"],
                         image_filename=r.get("image_filename"),
                         critical_warning=r.get("critical_warning"),
-                        has_feedback=r.get("has_feedback", False)
+                        has_feedback=r.get("has_feedback", False),
+                        crop_box=r.get("crop_box")
                     )
                     for r in records
                 ]
@@ -164,7 +166,8 @@ class StorageService:
                         timestamp=datetime.fromisoformat(r["timestamp"]) if isinstance(r["timestamp"], str) else r["timestamp"],
                         image_filename=r.get("image_filename"),
                         critical_warning=r.get("critical_warning"),
-                        has_feedback=r.get("has_feedback", False)
+                        has_feedback=r.get("has_feedback", False),
+                        crop_box=r.get("crop_box")
                     )
                     for r in data
                 ]

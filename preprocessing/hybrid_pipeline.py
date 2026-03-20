@@ -22,8 +22,16 @@ class ImagePreprocessingPipeline:
     """
     OpenCV-based preprocessing pipeline.
     """
-    def __init__(self, target_size=(380, 380)):
+    def __init__(self, target_size=(380, 380), margin_ratio=0.7):
+        """
+        Initialize the preprocessing pipeline.
+        Args:
+            target_size: Target image size for the AI model (width, height).
+            margin_ratio: Margin to add around the detected lesion (as a ratio of the lesion size).
+                         Increased to 0.7 for a more natural context and less aggressive crop.
+        """
         self.target_size = target_size
+        self.margin_ratio = margin_ratio
 
 
     def resize_with_padding(self, image, size, is_mask=False):
@@ -104,7 +112,7 @@ class ImagePreprocessingPipeline:
         except Exception:
             return image
 
-    def sharpen_image(self, image, sigma=1.0, strength=0.8):
+    def sharpen_image(self, image, sigma=1.0, strength=0.2):
         """
         Apply Unsharp Mask sharpening filter to enhance texture details.
         """
@@ -138,7 +146,7 @@ class ImagePreprocessingPipeline:
             l, a, b = cv2.split(lab)
             
             # Apply CLAHE to L channel
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
             cl = clahe.apply(l)
             
             # Merge channels and convert back to RGB
@@ -211,10 +219,10 @@ class ImagePreprocessingPipeline:
             x2 = min(img_w, x + w + mx)
             y2 = min(img_h, y + h + my)
             
-            return image[y1:y2, x1:x2], mask[y1:y2, x1:x2]
+            return image[y1:y2, x1:x2], mask[y1:y2, x1:x2], [x1, y1, x2, y2]
         except Exception as e:
             print(f"Warning: lesion_segmentation_and_crop failed: {e}")
-            return image, None
+            return image, None, None
  
     def process(self, image, mask=None, return_steps=False, enhancement_enabled=True):
         """Run preprocessing pipeline on a numpy image (RGB or BGR)."""
@@ -234,18 +242,24 @@ class ImagePreprocessingPipeline:
             if mask is not None:
                 steps['original_mask'] = mask.copy()
  
-        img_cropped, mask_cropped = self.lesion_segmentation_and_crop(image, mask)
+        img_cropped, mask_cropped, crop_box = self.lesion_segmentation_and_crop(image, mask)
         if return_steps:
             steps['cropped'] = img_cropped.copy()
+            steps['crop_box'] = crop_box # [x1, y1, x2, y2]
             if mask_cropped is not None:
                 steps['mask_cropped'] = mask_cropped.copy()
 
-        # FIXED ORDER: Hair Removal -> Resize
+        # FIXED ORDER: Enhancements MUST run BEFORE padding!
         img_hair_removed = self.hair_removal(img_cropped)
         if return_steps:
             steps['hair_removed'] = img_hair_removed.copy()
- 
-        img_resized = self.resize_image(img_hair_removed)
+            
+        # [SUBTLE ENHANCEMENT]: Only remove shadows/glare, no heavy sharpening!
+        img_shadow_removed = self.shadow_removal(img_hair_removed)
+        if return_steps:
+            steps['shadow_removed'] = img_shadow_removed.copy()
+            
+        img_resized = self.resize_image(img_shadow_removed)
         # Also resize the mask if present to match the image dimensions
         final_mask = None
         if mask_cropped is not None:
@@ -256,17 +270,7 @@ class ImagePreprocessingPipeline:
         if return_steps:
             steps['resized'] = img_resized.copy()
 
-        # Added Sharpening step for high-frequency detail enhancement
-        img_sharpened = self.sharpen_image(img_resized)
-        if return_steps:
-            steps['sharpened'] = img_sharpened.copy()
-
-        # NEW: CLAHE Color/Contrast Normalization for domain adaptation
-        img_normalized_color = self.apply_clahe(img_sharpened)
-        if return_steps:
-            steps['color_normalized'] = img_normalized_color.copy()
-
-        final_img = self.pixel_normalization(img_normalized_color)
+        final_img = self.pixel_normalization(img_resized)
         if return_steps:
             steps['normalized'] = final_img.copy()
             return final_img, steps

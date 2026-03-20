@@ -350,12 +350,22 @@ function setupPreprocessingToggle() {
     const toggle = document.getElementById('preprocessing-toggle');
     if (!toggle) return;
 
-    toggle.addEventListener('change', () => {
-        if (!selectedFile) return;
+    // ✅ Đặt mặc định là TẮT (false) nếu chưa có trong localStorage
+    const savedState = localStorage.getItem('dermatology_preprocessing');
+    const isEnabled = savedState === null ? false : savedState === 'true';
+    
+    toggle.checked = isEnabled;
+    toggle.disabled = false; // Luôn đảm bảo nó được bật để dùng
 
+    toggle.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        localStorage.setItem('dermatology_preprocessing', isChecked);
+        console.log(`[UI] Tùy chọn tiền xử lý: ${isChecked ? 'BẬT' : 'TẮT'}`);
+
+        if (!selectedFile) return;
         const imgElement = document.querySelector('[data-preview-container] img');
 
-        if (!toggle.checked) {
+        if (!isChecked) {
             // Hủy hiệu lực các request preview đang chạy
             previewRequestId++;
 

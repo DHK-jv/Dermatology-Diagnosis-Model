@@ -53,6 +53,7 @@ class PredictionResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now, description="Thời gian dự đoán")
     has_feedback: bool = Field(default=False, description="Cờ xác nhận kết quả này đã từng nhận được phản hồi hay chưa")
     preprocessing_applied: bool = Field(default=True, description="Cờ xác nhận có sử đoạn tiền xử lý ảnh nâng cao hay không")
+    crop_box: Optional[List[int]] = Field(default=None, description="Tọa độ vùng crop [x1, y1, x2, y2] nếu có")
     
     def __init__(self, **data):
         """Khởi tạo và tự động tính toán confidence_percent nếu thiếu"""
@@ -101,6 +102,7 @@ class DiagnosisHistory(BaseModel):
     user_id: Optional[str] = Field(default=None, description="Username của người thực hiện (Chỉ Admin thấy)")
     critical_warning: Optional[Dict] = Field(default=None)
     has_feedback: bool = Field(default=False)
+    crop_box: Optional[List[int]] = Field(default=None, description="Tọa độ vùng crop lưu trữ")
     
     class Config:
         json_schema_extra = {
@@ -178,6 +180,8 @@ class GradCAMResponse(BaseModel):
     predicted_class: str = Field(..., description="Loại bệnh được dùng để chạy heatmap")
     class_idx: int = Field(..., description="Chỉ số phân loại class (Index) của GradCAM")
     preprocessed_image: Optional[str] = Field(default=None, description="Ảnh gốc đã qua tiền xử lý, dùng làm nền so sánh (Base64)")
+    original_image: Optional[str] = Field(default=None, description="Ảnh gốc thực tế (Base64)")
+    analysis: Optional[Dict] = Field(default=None, description="Phân tích vùng tập trung của AI bằng lời")
     
     class Config:
         json_schema_extra = {
