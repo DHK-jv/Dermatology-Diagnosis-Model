@@ -32,7 +32,7 @@ COPY backend/app/ ./app/
 COPY preprocessing/ ./preprocessing/
 COPY backend/ml_models/ ./ml_models/
 
-RUN mkdir -p uploads && chmod 777 uploads
+RUN mkdir -p uploads && chmod 777 uploads && chmod 777 /app
 
 # ── Environment variables ─────────────────────────────────────
 # MONGODB_URL, USE_MONGODB, MONGODB_DB_NAME must be set in HF Spaces Settings -> Variables
