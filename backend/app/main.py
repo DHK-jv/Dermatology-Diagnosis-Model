@@ -13,7 +13,7 @@ from typing import Optional
 
 import cv2
 import numpy as np
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -41,6 +41,7 @@ from .services.image_preprocessing import (
     validate_image,
 )
 from .services.inference import model_service
+from .services.cleanup import run_cleanup_periodically
 from .services.security import (
     ALGORITHM,
     SECRET_KEY,
@@ -81,6 +82,11 @@ async def lifespan(app: FastAPI):
         logger.info("✓ AI Model loaded successfully")
     else:
         logger.error("✗ Failed to load AI model")
+
+    # Start Background Cleanup Task
+    import asyncio
+    asyncio.create_task(run_cleanup_periodically(interval_seconds=3600))
+    logger.info("✓ Background Cleanup Task started (hourly)")
 
     yield  # Ứng dụng chạy
 
@@ -242,6 +248,7 @@ async def health_check():
 async def predict(
     request: Request,
     file: UploadFile = File(..., description="Ảnh da cần chẩn đoán"),
+    preprocessing: bool = Form(True, description="Bật/Tắt tiền xử lý ảnh nâng cao"),
     current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """
@@ -263,8 +270,8 @@ async def predict(
         diagnosis_id = f"DIAG-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8]}"
 
         # Tiền xử lý + dự đoán
-        logger.info(f"Preprocessing image for {diagnosis_id}")
-        preprocessed_img = preprocess_image(file_content)
+        logger.info(f"Preprocessing image for {diagnosis_id} (enabled={preprocessing})")
+        preprocessed_img = preprocess_image(file_content, preprocessing_enabled=preprocessing)
 
         logger.info(f"Running AI prediction for {diagnosis_id}")
         predicted_class, confidence, all_predictions, critical_warning = model_service.predict(
@@ -299,6 +306,7 @@ async def predict(
                 ),
             },
             critical_warning=critical_warning,
+            preprocessing_applied=preprocessing,
             timestamp=datetime.now(),
         )
 
@@ -426,6 +434,7 @@ def _encode_image_to_base64(img_arr: Optional[np.ndarray]) -> str:
 )
 async def preview_preprocessing(
     file: UploadFile = File(..., description="Ảnh da cần xem trước"),
+    preprocessing: bool = Form(True, description="Bật/Tắt tiền xử lý nâng cao"),
 ):
     """Trả về ảnh đã xử lý và các bước trung gian dưới dạng base64."""
     try:
@@ -435,8 +444,8 @@ async def preview_preprocessing(
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        logger.info(f"Preview preprocessing for: {file.filename}")
-        preprocessed_img, steps = preprocess_image(file_content, return_steps=True)
+        logger.info(f"Preview preprocessing for: {file.filename} (enabled={preprocessing})")
+        preprocessed_img, steps = preprocess_image(file_content, return_steps=True, preprocessing_enabled=preprocessing)
 
         # (1, H, W, C) → (H, W, C)
         if preprocessed_img.ndim == 4:
@@ -450,6 +459,7 @@ async def preview_preprocessing(
         return PreviewResponse(
             processed_image=f"data:image/jpeg;base64,{_encode_image_to_base64(preprocessed_img)}",
             steps=encoded_steps,
+            preprocessing_applied=preprocessing,
         )
 
     except HTTPException:
@@ -515,6 +525,7 @@ async def submit_feedback(
 async def gradcam(
     file: UploadFile = File(..., description="Ảnh da cần giải thích"),
     target_class: Optional[str] = None,
+    preprocessing: bool = Form(True, description="Bật/Tắt tiền xử lý ảnh nâng cao"),
 ):
     """
     Sinh GradCAM heatmap cho ảnh đã upload.
@@ -533,8 +544,8 @@ async def gradcam(
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        logger.info(f"GradCAM: preprocessing {file.filename}")
-        preprocessed_img = preprocess_image(file_content)
+        logger.info(f"GradCAM: preprocessing {file.filename} (enabled={preprocessing})")
+        preprocessed_img, steps = preprocess_image(file_content, return_steps=True, preprocessing_enabled=preprocessing)
 
         # Xác định class mục tiêu
         if target_class and target_class in CLASS_NAMES:
@@ -553,7 +564,19 @@ async def gradcam(
             image_array=preprocessed_img,
             device=model_service._device,
             class_idx=class_idx,
+            mask=steps.get('mask_final')
         )
+
+        import cv2
+        import base64
+        import numpy as np
+        # Encode original preprocessed image for UI comparison
+        encode_img = preprocessed_img[0]
+        if encode_img.max() <= 1.05:
+            encode_img = encode_img * 255.0
+        encode_img = encode_img.astype(np.uint8)
+        _, buffer = cv2.imencode('.jpg', cv2.cvtColor(encode_img, cv2.COLOR_RGB2BGR))
+        preprocessed_b64 = base64.b64encode(buffer).decode('utf-8')
 
         del file_content, preprocessed_img
         gc.collect()
@@ -562,6 +585,7 @@ async def gradcam(
             heatmap_overlay=f"data:image/jpeg;base64,{heatmap_b64}",
             predicted_class=predicted_class_name,
             class_idx=class_idx,
+            preprocessed_image=f"data:image/jpeg;base64,{preprocessed_b64}"
         )
 
     except HTTPException:

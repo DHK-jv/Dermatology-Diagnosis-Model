@@ -52,6 +52,7 @@ class PredictionResponse(BaseModel):
     critical_warning: Optional[Dict] = Field(default=None, description="Cảnh báo bệnh cực kỳ nguy hiểm ẩn bên dưới nếu có")
     timestamp: datetime = Field(default_factory=datetime.now, description="Thời gian dự đoán")
     has_feedback: bool = Field(default=False, description="Cờ xác nhận kết quả này đã từng nhận được phản hồi hay chưa")
+    preprocessing_applied: bool = Field(default=True, description="Cờ xác nhận có sử đoạn tiền xử lý ảnh nâng cao hay không")
     
     def __init__(self, **data):
         """Khởi tạo và tự động tính toán confidence_percent nếu thiếu"""
@@ -156,6 +157,7 @@ class PreviewResponse(BaseModel):
     """Mô hình trả về cho API xem trước tiền xử lý ảnh"""
     processed_image: str = Field(..., description="Ảnh đã xử lý (Base64)")
     steps: Optional[Dict[str, str]] = Field(None, description="Các bước trung gian (Base64)")
+    preprocessing_applied: bool = Field(default=True, description="Cờ xác nhận có dùng tiền xử lý ảnh nâng cao hay không")
     
     class Config:
         json_schema_extra = {
@@ -175,6 +177,7 @@ class GradCAMResponse(BaseModel):
     heatmap_overlay: str = Field(..., description="Ảnh gốc đè bằng heatmap (Base64)")
     predicted_class: str = Field(..., description="Loại bệnh được dùng để chạy heatmap")
     class_idx: int = Field(..., description="Chỉ số phân loại class (Index) của GradCAM")
+    preprocessed_image: Optional[str] = Field(default=None, description="Ảnh gốc đã qua tiền xử lý, dùng làm nền so sánh (Base64)")
     
     class Config:
         json_schema_extra = {

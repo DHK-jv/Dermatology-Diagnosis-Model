@@ -7,9 +7,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Để tạo ngẫu nhiên một chuỗi bảo mật giống như dạng này, hãy chạy lệnh:
-# openssl rand -hex 32
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "b3a8c1f3c3a1h2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7")
+import secrets
+
+# Để tạo ngẫu nhiên một chuỗi bảo mật cứng, hãy chạy: openssl rand -hex 32
+# LƯU Ý MẠNH MẼ: Nếu không set biến môi trường JWT_SECRET_KEY ở HF Spaces production, hệ thống sẽ 
+# tự random key mới mỗi lần Docker Reboot (khi file này load lại), làm mọi người dùng bị bắt Login lại.
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_hex(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7)) # Mặc định là sống được 7 ngày
 

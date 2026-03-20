@@ -67,12 +67,13 @@ class Settings:
         else:
             self.MODEL_PATH = self.DEFAULT_MODEL_PATH
 
-        # Fallback cho môi trường dev nếu model được đặt ở kaggle_results
+        # Fallback cho môi trường dev nếu model được đặt ở thư mục research/kaggle_result/
         if not self.MODEL_PATH.exists():
             fallback_path = (
                 self.PROJECT_ROOT
-                / "kaggle_results"
-                / "kaggle-train-24class-v3.0-results"
+                / "research"
+                / "kaggle_result"
+                / "kaggle_train_v3.0_results"
                 / "efficientnet_b4_derma_v3_0.pth"
             )
             if fallback_path.exists():
