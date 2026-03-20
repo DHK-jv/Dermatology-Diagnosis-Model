@@ -84,22 +84,37 @@ Kiến trúc dữ liệu tinh gọn với 4 thực thể cốt lõi: Users, Dise
 ### 4.1. Lịch sử Tiến hóa Mô hình
 
 - **V1.0 (Baseline):** Dùng TensorFlow & EfficientNet-B3 trên 8 lớp bệnh. Bị nhiễu phông nền, Accuracy chỉ đạt ~73%.
-
-- **V2.0+ (Nâng cấp):** Chuyển sang PyTorch & EfficientNet-B4, mở rộng 24 lớp bệnh. Áp dụng YOLOv8 cắt nền, Accuracy đạt 86.2%.
-
+- **V2.0+ (Nâng cấp):** Chuyển sang PyTorch & EfficientNet-B4, mở rộng 24 lớp bệnh. Áp dụng YOLOv8 cắt nền.
 - **V3.0 (Hiện tại):** Tích hợp Asymmetric Loss chống mất cân bằng nhãn. Đạt chuẩn y khoa với Accuracy 88.5%, F1-Macro 0.880.
+
+Dưới đây là các biểu đồ minh chứng cho quá trình cải tiến mô hình qua 3 phiên bản 2.0, 2.1 và 3.0:
+
+![Biểu đồ Accuracy](research/kaggle_result/version_comparisons/val_acc_comparison.png)  
+*Đường cong Validation Accuracy: Phiên bản V3.0 (màu đỏ) chạy đường dài ổn định và vươn tới mức chuẩn xác cao nhất.*
+
+![Biểu đồ Peak Performance](research/kaggle_result/version_comparisons/peak_metrics_comparison.png)  
+*So sánh đỉnh hiệu năng: V3.0 bứt phá toàn diện về cả Accuracy và F1-Score.*
+
+![Biểu đồ Loss](research/kaggle_result/version_comparisons/val_loss_comparison.png)  
+*Đường cong Validation Loss: V3.0 khống chế hoàn toàn hiện tượng Overfitting từng gặp phải ở các bản trước.*
 
 ---
 
-### 4.2. Phân Tích Chỉ Số AI Trực Quan
+### 4.2. Phân Tích Chỉ Số AI Trực Quan (V3.0)
 
-![alt text](research/kaggle_results/kaggle-train-24class-v3.0-results/fig2_confusion_matrix.png)
+Để đảm bảo hệ thống có đủ khả năng ứng dụng lâm sàng, loạt các biểu đồ đánh giá dưới đây được trích xuất từ pha huấn luyện của V3.0:
 
-Ma trận nhầm lẫn chứng minh khả năng nhận diện xuất sắc các nhóm bệnh ung thư nguy hiểm (Recall cao).
+![Ma trận nhầm lẫn](research/kaggle_result/kaggle_train_v3.0_results/fig2_confusion_matrix.png)  
+*Ma trận nhầm lẫn (Confusion Matrix) chi tiết 24 lớp. Ma trận này đã được vẽ lại sau khi chạy Inference chuẩn với thiết kế trục đứng trực quan.*
 
-![alt text](research/kaggle_results/kaggle-train-24class-v3.0-results/fig1_learning_curves.png)
+![Learning Curves](research/kaggle_result/kaggle_train_v3.0_results/fig1_learning_curves.png)  
+*Đường cong hội tụ của Training và Validation, chứng minh mô hình học được các đặc trưng khái quát, không bị Overfitting.*
 
-Giá trị AUC trung bình đạt 0.95, thể hiện năng lực phân biệt bệnh lý vượt trội.
+![ROC Curves](research/kaggle_result/kaggle_train_v3.0_results/fig4_roc_curves.png)  
+*Bộ đường cong ROC-AUC cho từng lớp bệnh. Giá trị AUC trung bình cao xấp xỉ 0.95 bảo chứng cho khả năng phân biệt bệnh lý xuất sắc.*
+
+![Precision-Recall Curves](research/kaggle_result/kaggle_train_v3.0_results/fig5_precision_recall_curves.png)  
+*Đường cong Precision-Recall, thang đo cực kỳ quan trọng đối với dữ liệu mất cân bằng, chứng tỏ Asymmetric Loss hoạt động hiệu quả trên các bệnh hiếm gặp.*
 
 ---
 
@@ -135,10 +150,9 @@ Kết quả chẩn đoán minh bạch, vùng đỏ trên Grad-CAM bám sát vào
 
 - **Thu thập dữ liệu nội địa:** Mở rộng tập dữ liệu với hình ảnh bệnh nhân Việt Nam để AI làm quen với sắc tố da người châu Á.
 
-- **Tích hợp Generative AI:** Kết hợp LLM (như Gemini/ChatGPT) để tự động sinh báo cáo tư vấn dễ hiểu từ kết quả của EfficientNet.
-
 - **Phát triển Mobile App:** Đóng gói thành ứng dụng iOS/Android tận dụng camera chất lượng cao để khám sàng lọc tại nhà.
 
+- **Cải thiện mô hình:** Mô hình dù đạt được tỉ lệ chính xác cao nhưng vẫn còn một số hạn chế, cần tiếp tục cải thiện để đạt được độ chính xác cao hơn.
 ---
 
-💡 **Chi tiết hướng dẫn cài đặt và thiết lập Docker/Môi trường ảo (Local/Production) vui lòng xem tại phần Phụ Lục của file báo cáo Word.**
+💡 **Chi tiết hướng dẫn cài đặt và thiết lập Docker/Môi trường ảo (Local/Production) vui lòng xem tại phần Phụ Lục của file báo cáo Word hoặc file HuongDanSuDung.md**

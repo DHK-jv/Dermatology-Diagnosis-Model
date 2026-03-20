@@ -52,9 +52,7 @@ backend/ml_models/*.pt
 !backend/ml_models/yolov8n-seg.pt
 
 # TRAINING RESULTS
-kaggle_results/
-kaggle-train-24class-results/
-kaggle-train-24class-v1.0-results/
-kaggle-train-24class-v2.0-results/
-kaggle-train-24class-v2.1-results/
-kaggle-train-24class-v3.0-results/
+# kaggle_results/
+kaggle_train_v2.0_results/
+kaggle_train_v2.1_results/
+# kaggle_train_v3.0_results/

@@ -22,7 +22,7 @@ Người dùng ──► https://khangjv.id.vn (VPS - Frontend)
                         │
                         │ Gọi API
                         ▼
-              https://hoangkhang2-medai-dermatology.hf.space (Hugging Face - Backend + AI)
+              https://hoangkhang2-medai-dermatology.hf.space (Hugging Face - Backend + AI Model)
                         │
                         ▼
                     MongoDB Atlas (Lưu lịch sử chẩn đoán)
