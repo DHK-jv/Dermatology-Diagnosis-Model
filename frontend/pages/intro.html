@@ -168,8 +168,7 @@
                             <li class="flex items-start gap-3">
                                 <span
                                     class="material-symbols-outlined text-green-600 text-lg mt-0.5">check_circle</span>
-                                <span class="text-sm text-[#101418] dark:text-gray-300">Nên có một đồng xu bên cạnh để
-                                    so sánh kích thước (tùy chọn)</span>
+                                <span class="text-sm text-[#101418] dark:text-gray-300">Chất lượng ảnh càng tốt cho ra kết quả càng chính xác</span>
                             </li>
                         </ul>
                     </div>
@@ -228,6 +227,21 @@
                         </div>
                         <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
                     </div>
+                    <!-- Toggle Preprocessing -->
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-[#1e293b] rounded-lg border border-[#e5e7eb] dark:border-[#3e4c59]">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-xl">auto_fix_high</span>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-[#101418] dark:text-white">Xử lý ảnh</span>
+                                <span class="text-[10px] text-[#5e758d] dark:text-gray-400">Tự động xóa lông & làm nét</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="preprocessing-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
                     <!-- AI Confidence / Note -->
                     <div
                         class="flex gap-3 items-start p-3 bg-white dark:bg-[#1e293b] rounded-lg border border-[#e5e7eb] dark:border-[#3e4c59]">

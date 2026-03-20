@@ -31,10 +31,14 @@ function translateRiskLevel(riskLevel) {
 }
 
 let currentDiagnosis = null;
+let navigationState = null;
 
 // Khởi tạo hoạt động khi trình duyệt đã tải trang DOM xong
 document.addEventListener('DOMContentLoaded', async function () {
     console.log('Result page initialized');
+
+    // Lưu lại navigation state ngay lập tức (vì getNavigationState sẽ xóa nó sau lần gọi đầu)
+    navigationState = getNavigationState();
 
     await loadDiagnosisResult();
     setupResultActions();
@@ -46,9 +50,8 @@ document.addEventListener('DOMContentLoaded', async function () {
  */
 async function loadDiagnosisResult() {
     try {
-        // Cố gắng thử lấy từ dữ liệu navigation chuyển cảnh đẩy qua trước tiên
-        const navState = getNavigationState();
-        const diagnosisId = navState?.diagnosisId || new URLSearchParams(window.location.search).get('id');
+        // Sử dụng navigationState đã lưu toàn cục
+        const diagnosisId = navigationState?.diagnosisId || new URLSearchParams(window.location.search).get('id');
 
         // Lấy tạm dự phòng ở cache localStorage (kết quả chuẩn đoán thực nghiệm sát sườn nhất)
         let diagnosis = retrieve('latestDiagnosis');
@@ -131,11 +134,11 @@ function displayDiagnosisResult(diagnosis) {
     const userInfo = retrieve('user_info');
     const userRole = userInfo ? userInfo.role : 'guest';
     const feedbackSection = document.getElementById('feedback-section');
-    
+
     if (feedbackSection) {
         if (userRole === 'doctor' || userRole === 'admin') {
             feedbackSection.classList.remove('hidden');
-            
+
             // Nếu đã feedback rồi thì ẩn form và hiện thông báo success
             const formContainer = document.getElementById('feedback-form');
             const successMsg = document.getElementById('feedback-success');
@@ -435,6 +438,14 @@ async function loadGradCAM(diagnosis) {
             formData.append('target_class', diagnosis.predicted_class);
         }
 
+        // Lấy trạng thái tiền xử lý từ Navigation State (đã lưu cache) hoặc URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const preprocessing = (navigationState && navigationState.preprocessing !== undefined)
+            ? navigationState.preprocessing
+            : (urlParams.get('preprocessing') !== 'false');
+
+        formData.append('preprocessing', preprocessing ? 'true' : 'false');
+
         // Chạy gọi apiCall (có bao gồm token đăng nhập nếu có)
         const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.GRADCAM;
         const response = await fetch(url, {
@@ -455,7 +466,11 @@ async function loadGradCAM(diagnosis) {
 
         // Nhận lại và đắp thành phẩm xuất màn ảnh Giao Tiếp UI (Kết quả)
         heatmapImg.src = data.heatmap_overlay;
-        originalImg.src = imageDataUrl;
+        if (data.preprocessed_image) {
+            originalImg.src = data.preprocessed_image;
+        } else {
+            originalImg.src = imageDataUrl;
+        }
         if (classLabel) classLabel.textContent = data.predicted_class;
 
         loading.classList.add('hidden');

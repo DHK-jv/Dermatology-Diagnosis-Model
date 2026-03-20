@@ -5,6 +5,7 @@
 
 let selectedFile = null;
 let previewImage = null;
+let previewRequestId = 0;
 
 // Khởi tạo trang khi DOM đã tải xong
 document.addEventListener('DOMContentLoaded', function () {
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupFileUpload();
     setupCameraCapture();
     setupAnalyzeButton();
+    setupPreprocessingToggle();
 });
 
 /**
@@ -139,6 +141,8 @@ function showImagePreview(file) {
             if (imgElement) {
                 imgElement.src = previewImage;
                 imgElement.alt = file.name;
+                // Save original base64 for reverting/GradCAM
+                imgElement.dataset.originalSrc = previewImage;
                 // Buộc vẽ lại / Cập nhật khung ảnh gốc
                 imgElement.style.display = 'block';
                 console.log("Image src set. Container found.");
@@ -160,7 +164,18 @@ function showImagePreview(file) {
         }
 
         // Kích hoạt chức năng Tạm Lướt Tiền xử lý (Preprocessing Preview)
-        if (typeof API_CONFIG !== 'undefined') {
+        const preprocessingToggle = document.getElementById('preprocessing-toggle');
+        const isEnabled = preprocessingToggle ? preprocessingToggle.checked : true;
+        if (!isEnabled) {
+            const statusEl = document.getElementById('step-status');
+            const statusLabel = document.getElementById('step-label');
+            if (statusEl && statusLabel) {
+                statusEl.classList.remove('hidden');
+                statusEl.classList.replace('bg-black/70', 'bg-gray-500/90');
+                statusEl.classList.replace('bg-primary/90', 'bg-gray-500/90');
+                statusLabel.textContent = "Processing Disabled";
+            }
+        } else if (typeof API_CONFIG !== 'undefined') {
             fetchPreprocessingPreview(file);
         } else {
             console.error("API_CONFIG is not defined, cannot fetch preview");
@@ -203,10 +218,29 @@ async function fetchPreprocessingPreview(file) {
     if (loadingEl) loadingEl.classList.remove('hidden');
 
     try {
-        // Tạo bộ dữ liệu Form data
+        const preprocessingToggle = document.getElementById('preprocessing-toggle');
+        const isEnabled = preprocessingToggle ? preprocessingToggle.checked : true;
+
+        if (!isEnabled) {
+            // Nếu tắt tiền xử lý, không gọi API preview
+            if (loadingEl) loadingEl.classList.add('hidden');
+            const statusEl = document.getElementById('step-status');
+            const statusLabel = document.getElementById('step-label');
+            if (statusEl && statusLabel) {
+                statusEl.classList.remove('hidden');
+                statusEl.classList.replace('bg-black/70', 'bg-gray-500/90');
+                statusEl.classList.replace('bg-primary/90', 'bg-gray-500/90');
+                statusLabel.textContent = "Processing Disabled";
+            }
+            return;
+        }
+
+        const requestId = ++previewRequestId;
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('return_steps', 'true');
+        formData.append('preprocessing', isEnabled ? 'true' : 'false');
 
         console.log("DEBUG: API_CONFIG before fetch:", API_CONFIG);
 
@@ -214,6 +248,10 @@ async function fetchPreprocessingPreview(file) {
             method: 'POST',
             body: formData
         });
+
+        // Nếu đã có request mới hơn hoặc toggle bị tắt → bỏ qua response cũ
+        if (requestId !== previewRequestId) return;
+        if (preprocessingToggle && !preprocessingToggle.checked) return;
 
         // Hiện Hoạt Ảnh đồ họa (Animation) phân tích tiền xử lý
         if (data.steps) {
@@ -301,8 +339,46 @@ async function runPreprocessingAnimation(steps) {
 
     // Chuỗi xử lý đồ họa Animation đã hoàn tất
     statusEl.classList.replace('bg-black/70', 'bg-primary/90');
-    statusLabel.textContent = "Ready for Analysis";
+    statusLabel.textContent = steps.preprocessing_applied === false ? "Processing Disabled" : "Image Enhanced Successfully";
     statusEl.querySelector('span').classList.remove('animate-pulse');
+}
+
+/**
+ * Thiết lập Toggle Tiền xử lý
+ */
+function setupPreprocessingToggle() {
+    const toggle = document.getElementById('preprocessing-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('change', () => {
+        if (!selectedFile) return;
+
+        const imgElement = document.querySelector('[data-preview-container] img');
+
+        if (!toggle.checked) {
+            // Hủy hiệu lực các request preview đang chạy
+            previewRequestId++;
+
+            // Revert to original
+            if (imgElement && imgElement.dataset.originalSrc) {
+                imgElement.src = imgElement.dataset.originalSrc;
+            }
+            const statusEl = document.getElementById('step-status');
+            const statusLabel = document.getElementById('step-label');
+            if (statusEl && statusLabel) {
+                statusEl.classList.remove('hidden');
+                statusEl.classList.replace('bg-black/70', 'bg-gray-500/90');
+                statusEl.classList.replace('bg-primary/90', 'bg-gray-500/90');
+                statusLabel.textContent = "Processing Disabled";
+            }
+
+            const loadingEl = document.getElementById('processed-loading');
+            if (loadingEl) loadingEl.classList.add('hidden');
+        } else {
+            // Re-run preview
+            fetchPreprocessingPreview(selectedFile);
+        }
+    });
 }
 
 /**
@@ -393,6 +469,10 @@ async function runDiagnosis() {
         }, 1000);
 
         // Gửi hàm xử lý qua apiCall thay vì fetch để đính kèm Token đăng nhập
+        const preprocessingToggle = document.getElementById('preprocessing-toggle');
+        const isEnabled = preprocessingToggle ? preprocessingToggle.checked : true;
+        formData.append('preprocessing', isEnabled ? 'true' : 'false');
+
         const result = await apiCall(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
             method: 'POST',
             body: formData
@@ -417,7 +497,10 @@ async function runDiagnosis() {
         // Điều hướng chuyến tiếp giao diện người dùng tới trang result HTML
         showSuccess('Phân tích hoàn tất!');
         setTimeout(() => {
-            navigateTo('result.html', { diagnosisId: result.diagnosis_id });
+            navigateTo('result.html', {
+                diagnosisId: result.diagnosis_id,
+                preprocessing: isEnabled
+            });
         }, 500);
 
     } catch (error) {
