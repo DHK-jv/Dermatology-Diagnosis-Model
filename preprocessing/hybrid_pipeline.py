@@ -25,30 +25,8 @@ class ImagePreprocessingPipeline:
     def __init__(self, target_size=(380, 380)):
         self.target_size = target_size
 
-    def lesion_segmentation_and_crop(self, image, mask):
-        """Crop lesion region based on mask. If no mask, return original image."""
-        if image is None or image.size == 0:
-            raise ValueError("Invalid image for segmentation")
 
-        if mask is None or mask.size == 0:
-            return image
-
-        try:
-            _, binary_mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
-            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            if len(contours) == 0:
-                return image
-
-            largest_contour = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest_contour)
-            if w < 10 or h < 10:
-                return image
-
-            return image[y:y + h, x:x + w]
-        except Exception:
-            return image
-
-    def resize_with_padding(self, image, size):
+    def resize_with_padding(self, image, size, is_mask=False):
         """Resize image while preserving aspect ratio, using padding to reach target size."""
         h, w = image.shape[:2]
         target_w, target_h = size
@@ -58,18 +36,32 @@ class ImagePreprocessingPipeline:
         new_w, new_h = int(w * scale), int(h * scale)
         
         # Resize image
-        # Resize image using LANCZOS4 for maximum sharpness
-        resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
+        # Using INTER_NEAREST for masks to preserve binary values
+        interp = cv2.INTER_NEAREST if is_mask else cv2.INTER_LANCZOS4
+        resized = cv2.resize(image, (new_w, new_h), interpolation=interp)
         
-        # Create black canvas and paste resized image in center
-        canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
-        x_offset = (target_w - new_w) // 2
-        y_offset = (target_h - new_h) // 2
-        canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
-        
-        return canvas
+        # Pad to target size without black borders for images
+        pad_left = (target_w - new_w) // 2
+        pad_right = target_w - new_w - pad_left
+        pad_top = (target_h - new_h) // 2
+        pad_bottom = target_h - new_h - pad_top
 
-    def resize_image(self, image):
+        if is_mask:
+            # Keep mask background = 0
+            padded = cv2.copyMakeBorder(
+                resized, pad_top, pad_bottom, pad_left, pad_right,
+                borderType=cv2.BORDER_CONSTANT, value=0
+            )
+        else:
+            # Use ImageNet mean padding to avoid strong activations at corners
+            padded = cv2.copyMakeBorder(
+                resized, pad_top, pad_bottom, pad_left, pad_right,
+                borderType=cv2.BORDER_CONSTANT, value=[124, 116, 104]
+            )
+
+        return padded
+
+    def resize_image(self, image, is_mask=False):
         """Resize to target size preserving aspect ratio."""
         if image is None or image.size == 0:
             raise ValueError("Invalid image for resize")
@@ -78,7 +70,7 @@ class ImagePreprocessingPipeline:
         if image.shape[0] == self.target_size[1] and image.shape[1] == self.target_size[0]:
             return image
             
-        return self.resize_with_padding(image, self.target_size)
+        return self.resize_with_padding(image, self.target_size, is_mask=is_mask)
 
     def hair_removal(self, image):
         """
@@ -133,25 +125,134 @@ class ImagePreprocessingPipeline:
         image_float = image.astype(np.float32)
         return image_float / 255.0
 
-    def process(self, image, mask=None, return_steps=False):
+    def apply_clahe(self, image):
+        """
+        Apply Contrast Limited Adaptive Histogram Equalization.
+        Works best on the L channel of LAB color space to normalize lighting/contrast.
+        """
+        if image is None or image.size == 0:
+            return image
+        try:
+            # Convert to LAB color space
+            lab = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2LAB)
+            l, a, b = cv2.split(lab)
+            
+            # Apply CLAHE to L channel
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            cl = clahe.apply(l)
+            
+            # Merge channels and convert back to RGB
+            limg = cv2.merge((cl, a, b))
+            final = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+            return final
+        except Exception:
+            return image
+
+    def lesion_segmentation_and_crop(self, image, mask, margin_ratio=0.1):
+        """
+        Crop lesion region based on mask with morphological cleaning and centering.
+        Args:
+            image: numpy array (H, W, 3)
+            mask: numpy array (H, W)uint8
+            margin_ratio: ratio of margin to add around the bounding box
+        """
+        if image is None or image.size == 0:
+            raise ValueError("Invalid image for segmentation")
+ 
+        if mask is None or mask.size == 0:
+            return image, None
+ 
+        try:
+            # 1. Morphological cleaning to remove small noise and thin connections (e.g. to tools)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            binary_mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
+            binary_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_OPEN, kernel, iterations=1)
+            
+            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if len(contours) == 0:
+                return image, None
+ 
+            # 2. Pick the contour that is most central and of significant size
+            img_h, img_w = image.shape[:2]
+            img_center = np.array([img_w / 2, img_h / 2])
+            
+            best_contour = None
+            min_dist = float('inf')
+            
+            for cnt in contours:
+                area = cv2.contourArea(cnt)
+                if area < 500: # Skip very small noise
+                    continue
+                
+                M = cv2.moments(cnt)
+                if M["m00"] == 0: continue
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                
+                dist = np.linalg.norm(np.array([cX, cY]) - img_center)
+                # Weighted distance: prioritize large AND central objects
+                weighted_dist = dist / (np.sqrt(area) + 1e-5)
+                
+                if weighted_dist < min_dist:
+                    min_dist = weighted_dist
+                    best_contour = cnt
+
+            if best_contour is None:
+                best_contour = max(contours, key=cv2.contourArea)
+
+            x, y, w, h = cv2.boundingRect(best_contour)
+            
+            # 3. Add margin for context (AI needs some surrounding skin to see the border)
+            mx = int(w * margin_ratio)
+            my = int(h * margin_ratio)
+            
+            x1 = max(0, x - mx)
+            y1 = max(0, y - my)
+            x2 = min(img_w, x + w + mx)
+            y2 = min(img_h, y + h + my)
+            
+            return image[y1:y2, x1:x2], mask[y1:y2, x1:x2]
+        except Exception as e:
+            print(f"Warning: lesion_segmentation_and_crop failed: {e}")
+            return image, None
+ 
+    def process(self, image, mask=None, return_steps=False, enhancement_enabled=True):
         """Run preprocessing pipeline on a numpy image (RGB or BGR)."""
         if image is None or image.size == 0:
             raise ValueError("Invalid image input")
+ 
+        if not enhancement_enabled:
+            # Pure Resize mode: Skip all enhancements, just resize to target with padding
+            img_resized = self.resize_image(image)
+            if return_steps:
+                return img_resized, {'original': image.copy(), 'resized': img_resized.copy(), 'preprocessing_applied': False}
+            return img_resized
 
         steps = {}
         if return_steps:
             steps['original'] = image.copy()
-
-        img_cropped = self.lesion_segmentation_and_crop(image, mask)
+            if mask is not None:
+                steps['original_mask'] = mask.copy()
+ 
+        img_cropped, mask_cropped = self.lesion_segmentation_and_crop(image, mask)
         if return_steps:
             steps['cropped'] = img_cropped.copy()
+            if mask_cropped is not None:
+                steps['mask_cropped'] = mask_cropped.copy()
 
         # FIXED ORDER: Hair Removal -> Resize
         img_hair_removed = self.hair_removal(img_cropped)
         if return_steps:
             steps['hair_removed'] = img_hair_removed.copy()
-
+ 
         img_resized = self.resize_image(img_hair_removed)
+        # Also resize the mask if present to match the image dimensions
+        final_mask = None
+        if mask_cropped is not None:
+            final_mask = self.resize_image(mask_cropped, is_mask=True)
+            if return_steps:
+                steps['mask_final'] = final_mask.copy()
+ 
         if return_steps:
             steps['resized'] = img_resized.copy()
 
@@ -160,7 +261,12 @@ class ImagePreprocessingPipeline:
         if return_steps:
             steps['sharpened'] = img_sharpened.copy()
 
-        final_img = self.pixel_normalization(img_sharpened)
+        # NEW: CLAHE Color/Contrast Normalization for domain adaptation
+        img_normalized_color = self.apply_clahe(img_sharpened)
+        if return_steps:
+            steps['color_normalized'] = img_normalized_color.copy()
+
+        final_img = self.pixel_normalization(img_normalized_color)
         if return_steps:
             steps['normalized'] = final_img.copy()
             return final_img, steps
@@ -222,7 +328,7 @@ class HybridPreprocessingPipeline:
                 if mode == 'yolo':
                     raise RuntimeError("YOLO mode selected but YOLO not available")
 
-    def _get_mask(self, image, verbose=True):
+    def _get_mask(self, image, verbose=False):
         if self.yolo_segmentor is None:
             return None
 
@@ -232,6 +338,10 @@ class HybridPreprocessingPipeline:
                 return_confidence=True,
                 verbose=verbose
             )
+
+            # Safety check: mask might be None if YOLO fails to detect any object
+            if mask is None:
+                return None
 
             if confidence < self.min_confidence:
                 if verbose:
@@ -273,21 +383,37 @@ class HybridPreprocessingPipeline:
         except Exception:
             return None
 
-    def process(self, image, return_steps=False, verbose=True):
+    def _limit_resolution(self, image, max_dim=1024):
+        """Limit image resolution before expensive steps like hair removal."""
+        h, w = image.shape[:2]
+        if max(h, w) <= max_dim:
+            return image
+        
+        scale = max_dim / max(h, w)
+        new_w, new_h = int(w * scale), int(h * scale)
+        return cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    def process(self, image, return_steps=False, verbose=False, enhancement_enabled=True):
         if image is None or image.size == 0:
             raise ValueError("Invalid image input")
+
+        if not enhancement_enabled:
+            return self.opencv_pipeline.process(image, mask=None, return_steps=return_steps, enhancement_enabled=False)
+
+        # Bug Fix: Limit resolution BEFORE YOLO mask generation to ensure mask matches image size
+        image_limited = self._limit_resolution(image, 1024)
 
         mask = None
         if self.mode == 'yolo':
             if self.yolo_segmentor is None:
                 raise RuntimeError("YOLO not available but mode='yolo'")
-            mask = self._get_mask(image, verbose=verbose)
+            mask = self._get_mask(image_limited, verbose=verbose)
         elif self.mode == 'auto':
-            mask = self._get_mask(image, verbose=verbose)
+            mask = self._get_mask(image_limited, verbose=verbose)
         elif self.mode == 'opencv':
             mask = None
 
-        return self.opencv_pipeline.process(image, mask=mask, return_steps=return_steps)
+        return self.opencv_pipeline.process(image_limited, mask=mask, return_steps=return_steps, enhancement_enabled=True)
 
     def run(self, image_path, return_steps=False, verbose=True):
         if not os.path.exists(image_path):

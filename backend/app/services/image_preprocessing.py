@@ -148,35 +148,48 @@ def _ensure_batch_scale(batch: np.ndarray) -> np.ndarray:
     return batch
 
 
-def _fallback_preprocess(img: Image.Image, return_steps: bool):
-    """Tiền xử lý dự phòng: chỉ resize, không dùng pipeline."""
-    img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
-    img_array = np.array(img_resized, dtype=np.float32)
-    result_batch = np.expand_dims(img_array, axis=0)
-
-    if return_steps:
-        steps = {
-            'original': np.array(img),
-            'resized':   np.array(img_resized),
-            'normalized': np.array(img_resized),
-        }
-        return result_batch, steps
-    return result_batch
+def _fallback_preprocess(img_np: np.ndarray, return_steps: bool):
+    """
+    Tiền xử lý dự phòng cưỡng bức: sử dụng HybridPreprocessingPipeline ở chế độ 'none'
+    để thực hiện resize vuông (padding đen) thay vì kéo giãn ảnh (PIL stretch).
+    """
+    try:
+        from preprocessing.hybrid_pipeline import HybridPreprocessingPipeline
+        # Khởi tạo pipeline "nhẹ" chỉ để resize
+        fallback_pipeline = HybridPreprocessingPipeline(
+            mode='opencv', # Không dùng YOLO
+            target_size=settings.IMAGE_SIZE
+        )
+        # Chèn mask=None để kích hoạt resize-only
+        if return_steps:
+            result, steps = fallback_pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=True)
+            result_batch = _ensure_batch_scale(np.expand_dims(result, axis=0))
+            normalized_steps = {k: _normalize_to_uint8(v) for k, v in steps.items()}
+            return result_batch, normalized_steps
+        else:
+            result = fallback_pipeline.opencv_pipeline.process(img_np, mask=None, return_steps=False)
+            return _ensure_batch_scale(np.expand_dims(result, axis=0))
+    except Exception as e:
+        print(f"⚠️ Fallback pipeline failed: {e}. Last resort: PIL resize.")
+        # Trường hợp xấu nhất: dùng lại logic cũ (dễ bị stretch)
+        img = Image.fromarray(img_np)
+        img_resized = img.resize(settings.IMAGE_SIZE, Image.Resampling.LANCZOS)
+        img_array = np.array(img_resized, dtype=np.float32)
+        result_batch = np.expand_dims(img_array, axis=0)
+        return result_batch
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def preprocess_image(image_bytes: bytes, return_steps: bool = False):
+def preprocess_image(image_bytes: bytes, return_steps: bool = False, preprocessing_enabled: bool = True):
     """
     Tiền xử lý ảnh toàn diện.
-
-    Pipeline YOLO được cache tại module-level → chỉ load 1 lần duy nhất,
-    các request tiếp theo tái sử dụng ngay mà không tốn ~3s load lại.
 
     Args:
         image_bytes:  Dữ liệu ảnh thô (bytes)
         return_steps: Nếu True, trả về thêm dict các bước trung gian
+        preprocessing_enabled: Nếu False, bỏ qua các bước nâng cao (Hair removal/Segment), chỉ resize.
 
     Returns:
         np.ndarray batch shape (1, H, W, 3), pixel [0,255]  — hoặc
@@ -187,29 +200,29 @@ def preprocess_image(image_bytes: bytes, return_steps: bool = False):
         img = img.convert('RGB')
     img_np = np.array(img)
 
-    # Chế độ "none": chỉ resize, bỏ qua toàn bộ pipeline
-    if settings.PREPROCESSING_MODE.lower() == "none":
-        return _fallback_preprocess(img, return_steps)
+    # Nếu tắt tiền xử lý (hoặc mode='none'), dùng fallback (chỉ resize vuông)
+    if not preprocessing_enabled or settings.PREPROCESSING_MODE.lower() == "none":
+        return _fallback_preprocess(img_np, return_steps)
 
     pipeline = _get_pipeline()
 
     if pipeline is None:
         print("⚠️  Pipeline unavailable, falling back to resize-only.")
-        return _fallback_preprocess(img, return_steps)
+        return _fallback_preprocess(img_np, return_steps)
 
     try:
         if return_steps:
-            result, steps = pipeline.process(img_np, return_steps=True, verbose=False)
+            result, steps = pipeline.process(img_np, return_steps=True, verbose=False, enhancement_enabled=preprocessing_enabled)
             result_batch = _ensure_batch_scale(np.expand_dims(result, axis=0))
             normalized_steps = {k: _normalize_to_uint8(v) for k, v in steps.items()}
             return result_batch, normalized_steps
         else:
-            result = pipeline.process(img_np, return_steps=False, verbose=False)
+            result = pipeline.process(img_np, return_steps=False, verbose=False, enhancement_enabled=preprocessing_enabled)
             return _ensure_batch_scale(np.expand_dims(result, axis=0))
 
     except Exception as e:
         print(f"❌ Pipeline execution failed: {e}. Falling back to resize-only.")
-        return _fallback_preprocess(img, return_steps)
+        return _fallback_preprocess(img_np, return_steps)
 
 
 async def save_uploaded_image(file_content: bytes, diagnosis_id: str) -> Path:

@@ -39,6 +39,7 @@ class YOLOSegmentor:
                 device=self.device,
                 verbose=verbose,
                 retina_masks=True,
+                imgsz=1024,
                 stream=False 
             )
 
