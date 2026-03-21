@@ -27,23 +27,10 @@ function _safeLocalStorageGet(key) {
  * @returns {string}
  */
 function _resolveBaseUrl() {
-    // ── Ưu tiên 1-3: Giá trị tường minh ──────────────────────────────────
-    const explicit =
-        (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
-        document.querySelector('meta[name="api-base-url"]')?.content ||
-        _safeLocalStorageGet('API_BASE_URL') ||
-        _safeLocalStorageGet('VITE_API_URL');
-
-    if (explicit) {
-        console.log(`[Config] Using explicit BASE_URL: ${explicit}`);
-        return explicit.replace(/\/+$/, '');
-    }
-
-    // ── Ưu tiên 4: Tự phát hiện ──────────────────────────────────────────
     const { hostname, port, protocol } = window.location;
     console.log(`[Config] Detect → hostname='${hostname}' port='${port}' protocol='${protocol}'`);
 
-    // 4a. Local development: localhost / 127.0.0.1
+    // ── Ưu tiên 1: Local development (Luôn trỏ về 8000 nếu là localhost) ──
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         const effectivePort = port || (protocol === 'https:' ? '443' : '80');
         const proxyPorts = new Set(['80', '8080', '7860']);
@@ -55,6 +42,18 @@ function _resolveBaseUrl() {
 
         console.log('[Config] Environment: Local dev server → http://localhost:8000');
         return 'http://localhost:8000';
+    }
+
+    // ── Ưu tiên 2-4: Giá trị tường minh (Chỉ áp dụng khi không phải local) ──
+    const explicit =
+        (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
+        document.querySelector('meta[name="api-base-url"]')?.content ||
+        _safeLocalStorageGet('API_BASE_URL') ||
+        _safeLocalStorageGet('VITE_API_URL');
+
+    if (explicit) {
+        console.log(`[Config] Using explicit BASE_URL: ${explicit}`);
+        return explicit.replace(/\/+$/, '');
     }
 
     // 4b. Custom domain (khangjv.id.vn)
@@ -106,6 +105,9 @@ const API_CONFIG = {
     MAX_FILE_SIZE_MB: 10,
     ALLOWED_EXTENSIONS: ['jpg', 'jpeg', 'png', 'heic'],
 };
+
+// Xuất (export) ra biến toàn cục để các file khác (utils.js, auth.js...) có thể dùng
+window.API_CONFIG = API_CONFIG;
 
 // CommonJS export (Node / bundler cũ)
 if (typeof module !== 'undefined' && module.exports) {

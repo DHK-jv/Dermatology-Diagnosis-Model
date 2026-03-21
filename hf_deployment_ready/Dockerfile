@@ -31,7 +31,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY backend/app/ ./app/
 COPY preprocessing/ ./preprocessing/
 COPY backend/ml_models/ ./ml_models/
-COPY frontend/ ./frontend/
+# Frontend is served from VPS, no need to copy here
 
 RUN mkdir -p uploads && chmod 777 uploads && chmod 777 /app
 

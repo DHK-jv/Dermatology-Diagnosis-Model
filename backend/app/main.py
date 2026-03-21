@@ -112,12 +112,16 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 # ---------------------------------------------------------------------------
 # CORS — đọc từ biến môi trường, hỗ trợ mọi nền tảng (HF Spaces, Docker…)
 # ---------------------------------------------------------------------------
-_cors_origins_env = os.environ.get("ALLOWED_ORIGINS", "https://khangjv.id.vn")
-_cors_origins = (
-    [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
-    if _cors_origins_env
-    else ["*"]
-)
+# CORS — nạp từ cấu hình mặc định (localhost) + biến môi trường
+_cors_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+_cors_origins = settings.CORS_ORIGINS.copy()
+
+if _cors_origins_env:
+    _cors_origins.extend([o.strip() for o in _cors_origins_env.split(",") if o.strip()])
+
+# Thêm domain chính nếu chưa có
+if "https://khangjv.id.vn" not in _cors_origins:
+    _cors_origins.append("https://khangjv.id.vn")
 
 app.add_middleware(
     CORSMiddleware,
@@ -528,6 +532,7 @@ async def gradcam(
     file: UploadFile = File(..., description="Ảnh da cần giải thích"),
     target_class: Optional[str] = None,
     preprocessing: bool = Form(True, description="Bật/Tắt tiền xử lý ảnh nâng cao"),
+    layer_offset: int = Form(-2, description="Offset Layer của GradCAM (mặc định -2)")
 ):
     """
     Sinh GradCAM heatmap cho ảnh đã upload.
@@ -576,9 +581,8 @@ async def gradcam(
         # kích thước ảnh gốc và overlay đúng vị trí, thay vì overlay trên ảnh đã preprocess.
         crop_box_data = steps.get('crop_box')
         
-        # ✅ FIX: Khớp đúng tham số        # ✅ V3.0: Lấy danh sách tên bệnh để phân tích Top-K
-        from app.utils.medical_terms import MEDICAL_TERMS
-        class_names = [v.get('en', k) for k, v in MEDICAL_TERMS.items()]
+        # ✅ V3.0: Lấy danh sách tên bệnh để phân tích Top-K
+        class_names = [DISEASE_NAMES_EN.get(k, k) for k in CLASS_NAMES]
 
         # Generate Grad-CAM overlay (Hỗ trợ Geometric Coordinate mapping)
         heatmap_uri, analysis_dict = generate_gradcam_overlay(

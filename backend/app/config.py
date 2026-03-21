@@ -7,8 +7,12 @@ from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
-# Đọc biến môi trường từ file .env
-load_dotenv()
+# Đọc biến môi trường từ file .env (Tìm ở thư mục gốc dự án)
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+if not env_path.exists():
+    # Trường hợp chạy trong Docker (hf_deployment_ready)
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ class Settings:
     
     # Cài đặt MongoDB (tùy chọn - dự phòng bằng JSON nếu không có)
     MONGODB_URL: Optional[str] = os.getenv("MONGODB_URL", None)
-    MONGODB_DB_NAME: str = "medai_dermatology"
+    MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "medai_dermatology")
     
     # Cài đặt lưu trữ
     USE_MONGODB: bool = os.getenv("USE_MONGODB", "false").lower() == "true"
@@ -78,6 +82,13 @@ class Settings:
             )
             if fallback_path.exists():
                 self.MODEL_PATH = fallback_path
+
+        # Logging kiểm tra MongoDB (chỉ log trạng thái, không log chuỗi kết nối nhạy cảm)
+        if self.USE_MONGODB:
+            if not self.MONGODB_URL:
+                logger.error("❌ USE_MONGODB=true but MONGODB_URL is missing!")
+            else:
+                logger.info(f"✓ MongoDB configuration detected (Database: {self.MONGODB_DB_NAME})")
 
         # Kiểm tra sự tồn tại của mô hình
         if not self.MODEL_PATH.exists():

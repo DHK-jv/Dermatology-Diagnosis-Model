@@ -149,6 +149,8 @@ def validate_image(file_content: bytes, filename: str) -> Tuple[bool, str]:
 # ---------------------------------------------------------------------------
 def _normalize_to_uint8(arr: np.ndarray) -> np.ndarray:
     """Chuyển mảng float [0,1] hoặc uint8 [0,255] về uint8 [0,255]."""
+    if not isinstance(arr, np.ndarray):
+        return arr
     if arr.dtype in (np.float32, np.float64):
         return (arr * 255).astype(np.uint8) if arr.max() <= _NORMALIZE_THRESHOLD else arr.astype(np.uint8)
     return arr.astype(np.uint8)
