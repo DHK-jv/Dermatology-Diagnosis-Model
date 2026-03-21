@@ -12,6 +12,7 @@
 
 🌐 **Demo hệ thống:** 
 🔗 `https://khangjv.id.vn`
+`Admin account: admin - Password: Hoangkhang2$`
 ---
 
 ## 📌 TÓM TẮT ĐỀ TÀI
