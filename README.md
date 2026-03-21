@@ -60,6 +60,8 @@ Hệ thống là sự kết hợp nhuần nhuyễn giữa Kỹ thuật Phần m�
 
 - **Trực quan hóa (Explainable AI):** Bản đồ nhiệt Grad-CAM.
 
+![alt text](research/images/grand_cam.png) 
+
 ---
 
 ## CHƯƠNG 3: PHÂN TÍCH VÀ THIẾT KẾ MÔ HÌNH
