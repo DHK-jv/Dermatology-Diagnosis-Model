@@ -7,7 +7,7 @@
 
 📄 **Đường dẫn file báo cáo chi tiết:**  
 File Word:  
-research/reports/Bao_cao_do_an_2.docx  
+research/reports/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.docx  
 File PDF:  
 bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf  
 
