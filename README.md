@@ -6,25 +6,24 @@
 **Ứng dụng công nghệ:** Deep Learning (EfficientNet), Image Segmentation (YOLOv8), FastAPI, MongoDB & Kiến trúc triển khai phân tán.
 
 📄 **Đường dẫn file báo cáo chi tiết:**  
-File Word:
-research/reports/Bao_cao_do_an_2.docx
-File PDF:
-bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf
+File Word:  
+research/reports/Bao_cao_do_an_2.docx  
+File PDF:  
+bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf  
+
 ---
 
-🌐 **Demo hệ thống:** 
-🔗 https://khangjv.id.vn
+🌐 **Demo hệ thống:**  
+🔗 https://khangjv.id.vn  
 
-🌐 Demo hệ thống:
-🔗 https://khangjv.id.vn
+🔐 **Tài khoản dùng thử:**  
+**Doctor:**  
+- Username: doctor  
+- Password: Doctor123*  
 
-🔐 Tài khoản dùng thử:
-Doctor:
-Username: doctor
-Password: Doctor123*
-User:
-Username: user
-Password: User123*
+**User:**  
+- Username: user  
+- Password: User123*  
 
 ---
 
