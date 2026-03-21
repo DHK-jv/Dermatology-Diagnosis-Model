@@ -594,8 +594,8 @@ async def gradcam(
             crop_box=crop_box_data,
             class_names=class_names, # ✅ V3.0 New feature
             layer_offset=layer_offset, # ✅ V3.0 New feature
-            comparison_view=True,
-            include_colorbar=False,
+            comparison_view=False,
+            include_colorbar=True,
         )
 
         # Encode ảnh preprocessed (kích thước model) để UI có thể so sánh nếu cần

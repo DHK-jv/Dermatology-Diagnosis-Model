@@ -56,26 +56,26 @@ _V3_STD         = [0.229, 0.224, 0.225]
 _V3_NUM_CLASSES = 24
 _V3_DROPOUT     = 0.4
 
-# Postprocess hyper-params (r3)
-_BORDER_TRIM    = 35    # px sau upscale; 35/380 = 9.2% (v2: 40, r1: 20)
-_GAUSS_DIV      = 1.8   # sigma = H / _GAUSS_DIV
-_THRESH_PCT     = 45    # adaptive threshold percentile
-_CLIP_PCT       = 97.0  # outlier clip percentile (r2: giảm từ 99.5 → 97)
-_CORNER_RATIO   = 2.0   # zero-out góc nếu mean_corner > ratio × mean_center
+# Postprocess hyper-params (r3-optimized)
+_BORDER_TRIM    = 30    # px sau upscale (giảm nhẹ để lấy thêm thông tin rìa)
+_GAUSS_DIV      = 1.5   # sigma lớn hơn -> prior rộng hơn
+_THRESH_PCT     = 30    # adaptive threshold percentile (giảm để giữ thêm vùng biên)
+_CLIP_PCT       = 98.5  # outlier clip (tăng để giữ core mạnh hơn)
+_CORNER_RATIO   = 2.2   # nới lỏng corner guard
 _CAM_BORDER_PX  = 2     # border px suppress trên raw 12×12 CAM (r2: tăng từ 1 → 2)
-_SMOOTH_KSIZE   = 21    # smaller blur for sharper focus (odd)
-_CAM_GAMMA      = 1.35  # >1: suppress low values, keep core sharp
-_BG_CUTOFF_PCT  = 70.0  # remove diffuse haze after normalize
-_ALPHA_GAMMA    = 1.45  # reduce low-alpha haze in overlay
-_ALPHA_MAX      = 0.75  # max overlay opacity
-_ALPHA_CUTOFF   = 0.25  # remove low-activation alpha haze
+_SMOOTH_KSIZE   = 35    # larger blur for smoother heatmap
+_CAM_GAMMA      = 0.85  # <1: make heatmap "fatter" and more diffuse
+_BG_CUTOFF_PCT  = 35.0  # GIẢM MẠNH (70->35) để heatmap không bị co thành "chấm đỏ"
+_ALPHA_GAMMA    = 1.0   # lineary alpha for better visibility
+_ALPHA_MAX      = 0.80  # hơi đậm hơn một chút
+_ALPHA_CUTOFF   = 0.15  # GIẢM MẠNH (0.25->0.15) để giữ vùng halo quanh nốt bệnh
 _MASK_DILATE    = 1     # expand lesion mask slightly
 _MASK_BLUR      = 31    # soften lesion mask edges (odd)
-_FOCUS_PCT      = 88.0  # percentile for focus component seed
-_FOCUS_MIN_AREA = 0.0015 # min area ratio for component keep
-_FOCUS_DILATE   = 2
-_FOCUS_BLUR     = 41
-_FINAL_CUTOFF   = 0.18  # final hard cutoff after focus
+_FOCUS_PCT      = 75.0  # GIẢM (88->75) để không quá khắt khe khi chọn thành phần chính
+_FOCUS_MIN_AREA = 0.0010
+_FOCUS_DILATE   = 3
+_FOCUS_BLUR     = 51
+_FINAL_CUTOFF   = 0.08  # GIẢM (0.18->0.08) để giữ toàn bộ vùng ảnh hưởng
 
 
 # ── Model Loader ──────────────────────────────────────────────────────────────
@@ -184,7 +184,8 @@ class GradCAM:
         """
         self.model.eval()
         device = next(self.model.parameters()).device
-        input_tensor = input_tensor.to(device)
+        dtype  = next(self.model.parameters()).dtype
+        input_tensor = input_tensor.to(device=device, dtype=dtype)
 
         with torch.enable_grad():
             output = self.model(input_tensor)
@@ -213,7 +214,7 @@ class GradCAM:
             )
 
         weights = self.gradients.mean(dim=(2, 3), keepdim=True)
-        cam = F.relu((weights * self.activations).sum(dim=1)).squeeze(0).detach().cpu().numpy()
+        cam = F.relu((weights * self.activations).sum(dim=1)).squeeze(0).detach().cpu().numpy().astype(np.float32)
 
         # FIX r2: suppress 2px biên trên raw CAM (12×12 @ 380px).
         # Hot pixel tại [1,11] hay xuất hiện do EfficientNet padding → xóa tại nguồn.
