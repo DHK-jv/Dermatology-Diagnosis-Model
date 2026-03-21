@@ -14,6 +14,18 @@ bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf
 
 🌐 **Demo hệ thống:** 
 🔗 https://khangjv.id.vn
+
+🌐 Demo hệ thống:
+🔗 https://khangjv.id.vn
+
+🔐 Tài khoản dùng thử:
+Doctor:
+Username: doctor
+Password: Doctor123*
+User:
+Username: user
+Password: User123*
+
 ---
 
 ## 📌 TÓM TẮT ĐỀ TÀI
