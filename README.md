@@ -14,12 +14,6 @@ bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf
 
 🌐 **Demo hệ thống:** 
 🔗 https://khangjv.id.vn
-
-Admin account: admin
-Password: Hoangkhang2$
-
-User account: user
-Password: User123*
 ---
 
 ## 📌 TÓM TẮT ĐỀ TÀI
