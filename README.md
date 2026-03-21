@@ -7,7 +7,11 @@
 
 📄 **Đường dẫn file báo cáo chi tiết:**  
 `research/reports/Bao_cao_do_an_2.docx`
+`bacao/DuongHoangKhang_223952_DH22KPM01_BaoCaoDoAn2.pdf`
 
+
+🌐 **Demo hệ thống:** 
+🔗 `https://khangjv.id.vn`
 ---
 
 ## 📌 TÓM TẮT ĐỀ TÀI

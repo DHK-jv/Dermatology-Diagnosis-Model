@@ -56,3 +56,5 @@ backend/ml_models/*.pt
 kaggle_train_v2.0_results/
 kaggle_train_v2.1_results/
 # kaggle_train_v3.0_results/
+
+hf_deployment_ready/
