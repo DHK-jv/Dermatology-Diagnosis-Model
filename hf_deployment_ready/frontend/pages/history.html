@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>🏥 Lịch Sử Chẩn Đoán - MedAI Dermatology</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <!-- Material Symbols - FIXED: removed space in URL -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Configuration -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#007fff",
+                        "primary-hover": "#0066cc",
+                        "teal-dark": "#004d4d",
+                        "teal-light": "#e0f2f1",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1923",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    }
+                },
+            },
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-[#101418] dark:text-white flex flex-col min-h-screen font-display">
+    <!-- Top Navigation -->
+    <header
+        class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[#dae0e7] dark:border-[#2e3e50] bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md px-6 lg:px-20 py-4 shadow-sm">
+        <div class="flex items-center gap-3 text-teal-dark dark:text-white">
+            <div class="flex items-center justify-center rounded bg-primary/10 p-1.5 text-primary">
+                <span class="material-symbols-outlined text-[28px]">dermatology</span>
+            </div>
+            <h2 class="text-teal-dark dark:text-white text-xl font-bold leading-tight tracking-tight">MedAI
+                Dermatology</h2>
+        </div>
+
+        <div class="hidden md:flex items-center gap-8">
+            <nav class="flex items-center gap-6">
+                <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                    href="../index.html">Trang Chủ</a>
+
+                <a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
+                    href="intro.html">Chẩn Đoán</a>
+
+                <a class="text-primary text-sm font-bold" href="history.html">Lịch Sử</a>
+            </nav>
+
+            <a href="intro.html"
+                class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-md transition-all">
+                <span class="truncate">Chẩn Đoán Ngay</span>
+            </a>
+        </div>
+
+        <button class="md:hidden text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-6xl mx-auto px-4 md:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1
+                class="text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em] mb-2 text-[#101418] dark:text-white">
+                Lịch Sử Chẩn Đoán
+            </h1>
+            <p class="text-[#5e758d] dark:text-gray-400 text-base">Xem lại các kết quả chẩn đoán trước đây của bạn
+            </p>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <!-- Search Bar -->
+            <div class="flex-1 w-full md:w-auto">
+                <div class="relative">
+                    <span
+                        class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    <input type="text" id="search-input" placeholder="Tìm kiếm theo ID hoặc tên bệnh..."
+                        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white" />
+                </div>
+            </div>
+
+            <!-- Risk Level Filters -->
+            <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+                <button data-risk-filter="all"
+                    class="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium whitespace-nowrap transition-colors shadow-sm">
+                    Tất Cả
+                </button>
+
+                <button data-risk-filter="low"
+                    class="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 text-sm font-medium whitespace-nowrap transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/30">
+                    Thấp
+                </button>
+                <button data-risk-filter="medium"
+                    class="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 text-sm font-medium whitespace-nowrap transition-colors hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-900/30">
+                    Trung Bình
+                </button>
+                <button data-risk-filter="high"
+                    class="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 text-sm font-medium whitespace-nowrap transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30">
+                    Cao
+                </button>
+            </div>
+        </div>
+
+        <!-- Records Count -->
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400" data-record-count>Đang tải...</p>
+        </div>
+
+        <!-- History Table/Cards Container -->
+        <div id="history-container">
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center py-16">
+                <div
+                    class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent">
+                </div>
+                <p class="text-gray-500 dark:text-gray-400 mt-6 text-lg">Đang tải lịch sử chẩn đoán...</p>
+            </div>
+
+            <!-- Empty State (Hidden by default, shown by JS if no data) -->
+            <div id="empty-state" class="hidden">
+                <div class="empty-state flex flex-col items-center justify-center py-12">
+                    <div
+                        class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                        <span class="material-symbols-outlined text-4xl text-gray-400">folder_open</span>
+                    </div>
+                    <div class="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">Chưa Có Lịch Sử Chẩn Đoán</div>
+                    <p class="text-gray-500 dark:text-gray-400 text-center max-w-md mb-6">
+                        Bạn chưa thực hiện chẩn đoán nào. Hãy bắt đầu bằng cách upload một ảnh da để phân tích.
+                    </p>
+                    <a href="intro.html"
+                        class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-lg transition-all">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        <span>Bắt Đầu Chẩn Đoán</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- History Table (Will be populated by JS) -->
+            <div id="history-table" class="hidden">
+                <!-- Table Header (Desktop) -->
+                <div
+                    class="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">
+                    <div class="col-span-3">Mã Chẩn Đoán</div>
+                    <div class="col-span-2">Ngày</div>
+                    <div class="col-span-3">Chẩn Đoán</div>
+                    <div class="col-span-2">Độ Tin Cậy</div>
+                    <div class="col-span-2 text-right">Mức Độ</div>
+                </div>
+
+                <!-- Records Container -->
+                <div id="history-records" class="flex flex-col gap-3">
+                    <!-- Records will be dynamically inserted here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Files -->
+    <script src="../js/runtime-env.js"></script>
+    <script src="../js/config.js?v=11"></script>
+    <script src="../js/utils.js?v=11"></script>
+    <script src="../js/auth.js?v=11"></script>
+    <script src="../js/app.js?v=11"></script>
+    <script src="../js/history.js?v=11"></script>
+</body>
+
+</html>
