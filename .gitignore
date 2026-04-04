@@ -51,4 +51,9 @@ backend/ml_models/*.pth
 backend/ml_models/*.pt
 !backend/ml_models/yolov8n-seg.pt
 
+research/kaggle_result/kaggle_train_v2.0_results/efficientnet_b4_derma_best.pth
+research/kaggle_result/kaggle_train_v2.0_results/last_checkpoint.pth
+research/kaggle_result/kaggle_train_v2.1_results/efficientnet_b4_derma_v2_1_finetuned.pth
+research/kaggle_result/kaggle_train_v2.1_results/last_checkpoint.pth
+
 hf_deployment_ready/
